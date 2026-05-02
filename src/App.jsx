@@ -13,7 +13,7 @@ export default function App() {
 
   const handleUpload = (files) => {
     const remaining = 30 - images.length
-    if (remaining <= 0) return alert('Maximum 30 images reached.')
+    if (remaining <= 0) return alert('Maximum 30 images reached! 🎨')
     Array.from(files).slice(0, remaining).forEach(file => {
       if (!file.type.startsWith('image/')) return
       const reader = new FileReader()

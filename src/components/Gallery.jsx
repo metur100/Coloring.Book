@@ -26,12 +26,12 @@ export default function Gallery({ images, onSelect, onUpload, onDelete }) {
           onClick={() => inputRef.current.click()}
           onDragOver={e => e.preventDefault()}
           onDrop={handleDrop}
-          disabled={images.length >= 10}
+          disabled={images.length >= 30}
           aria-label="Upload new image"
         >
           <div className={styles.uploadIcon}>+</div>
           <span className={styles.uploadLabel}>Add Image</span>
-          <span className={styles.uploadHint}>{images.length}/10</span>
+          <span className={styles.uploadHint}>{images.length}/30</span>
         </button>
         <input
           ref={inputRef}

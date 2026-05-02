@@ -1,11 +1,13 @@
-/* ── Desktop / tablet: vertical left sidebar ── */
+/* ═══════════════════════════════════════════════
+   DESKTOP / TABLET  — vertical left sidebar
+   ═══════════════════════════════════════════════ */
 .sidebar {
   width: 210px;
   min-width: 190px;
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 8px;
   padding: 10px;
   background: rgba(255,255,255,0.025);
   border-right: 1px solid rgba(255,255,255,0.06);
@@ -14,25 +16,14 @@
   scrollbar-color: rgba(255,255,255,0.1) transparent;
 }
 
-.section {
-  background: rgba(255,255,255,0.04);
-  border: 1px solid rgba(255,255,255,0.07);
-  border-radius: 14px;
-  padding: 10px 12px;
+/* On desktop row1/row2 are just visual groupings */
+.row1, .row2 {
   display: flex;
   flex-direction: column;
   gap: 8px;
 }
 
-.label {
-  font-size: 0.62rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.12em;
-  color: rgba(255,255,255,0.3);
-}
-
-/* Tools — 3 columns, 2 rows = 6 icons */
+/* Tools grid: 3 cols × 2 rows */
 .toolGroup {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -43,7 +34,6 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 100%;
   aspect-ratio: 1;
   border-radius: 12px;
   border: 2px solid transparent;
@@ -51,18 +41,16 @@
   font-size: 1.4rem;
   cursor: pointer;
   transition: all 0.16s;
-  flex-shrink: 0;
 }
 .toolBtn:hover {
   background: rgba(167,139,250,0.2);
   border-color: rgba(167,139,250,0.4);
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 .toolBtn.active {
   background: linear-gradient(135deg, rgba(167,139,250,0.35), rgba(96,165,250,0.25));
   border-color: rgba(167,139,250,0.7);
-  box-shadow: 0 0 16px rgba(167,139,250,0.3);
-  transform: scale(1.08);
+  box-shadow: 0 0 14px rgba(167,139,250,0.3);
 }
 .dangerTool:hover {
   background: rgba(239,68,68,0.25);
@@ -70,164 +58,167 @@
 }
 
 /* Size */
-.slider { width: 100%; accent-color: #a78bfa; cursor: pointer; height: 6px; }
+.sizeGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 8px 10px;
+}
+.slider {
+  width: 100%;
+  accent-color: #a78bfa;
+  cursor: pointer;
+  height: 6px;
+}
 .sizePreview {
-  height: 52px;
+  height: 48px;
   background: rgba(255,255,255,0.04);
   border-radius: 8px;
-  border: 1px solid rgba(255,255,255,0.06);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
-/* Palette — 5 colors in one row */
+/* Palette */
 .palette {
   display: flex;
-  flex-direction: row;
   flex-wrap: wrap;
   gap: 5px;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 12px;
+  padding: 8px;
 }
 .dot {
-  width: 32px; height: 32px;
+  width: 30px; height: 30px;
   border-radius: 8px;
   border: 2px solid transparent;
   cursor: pointer;
-  transition: transform 0.14s, border-color 0.14s, box-shadow 0.14s;
+  transition: transform 0.14s, border-color 0.14s;
   flex-shrink: 0;
 }
 .dot:hover { transform: scale(1.2); border-color: rgba(255,255,255,0.4); }
-.dotActive { border-color: #fff !important; transform: scale(1.2); box-shadow: 0 0 10px rgba(255,255,255,0.5); }
-
-/* Stickers */
-.stickerGrid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 5px;
-}
-.stickerBtn {
-  font-size: 1.5rem;
-  background: rgba(255,255,255,0.06);
-  border: 2px solid transparent;
-  border-radius: 10px;
-  cursor: pointer;
-  padding: 4px;
-  transition: all 0.15s;
-  aspect-ratio: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.stickerBtn:hover {
-  background: rgba(255,221,87,0.2);
-  border-color: rgba(255,221,87,0.5);
-  transform: scale(1.15);
+.dotActive {
+  border-color: #fff !important;
+  transform: scale(1.2);
+  box-shadow: 0 0 10px rgba(255,255,255,0.5);
 }
 
 /* Custom color */
 .colorSwatch {
-  width: 52px; height: 52px;
-  border-radius: 14px;
+  display: block;
+  width: 48px; height: 48px;
+  border-radius: 12px;
   border: 3px solid rgba(255,255,255,0.25);
   cursor: pointer;
-  display: block;
-  transition: transform 0.15s, box-shadow 0.15s;
-  align-self: flex-start;
+  transition: transform 0.15s;
+  flex-shrink: 0;
 }
-.colorSwatch:hover { transform: scale(1.1); box-shadow: 0 0 14px rgba(255,255,255,0.2); }
+.colorSwatch:hover { transform: scale(1.1); }
 .hiddenPicker { display: none; }
 
-/* ── PHONE: 2-row horizontal top bar, icons only, NO vertical scroll ── */
+/* ═══════════════════════════════════════════════
+   PHONE  ≤ 768px — TWO fixed rows at top
+   Row 1: tools + size
+   Row 2: color palette + custom picker
+   ═══════════════════════════════════════════════ */
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
     min-width: unset;
+    height: 124px;        /* exactly 2 rows of 56px + 4px gap + 4px padding top/bottom */
+    flex-shrink: 0;
+    flex-direction: column;  /* stack row1 above row2 */
+    gap: 4px;
+    padding: 4px 8px;
+    border-right: none;
+    border-bottom: 2px solid rgba(255,255,255,0.1);
+    background: rgba(13,15,26,0.98);
+    overflow: hidden;        /* NO vertical scroll ever */
+  }
+
+  /* Each row: horizontal strip, scrolls sideways if needed */
+  .row1, .row2 {
     flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: center;
+    gap: 6px;
+    height: 58px;
+    flex-shrink: 0;
     overflow-x: auto;
     overflow-y: hidden;
-    height: auto;
-    /* Two rows: each row ~58px + padding = ~130px max */
-    max-height: 130px;
-    padding: 6px 8px;
-    gap: 6px;
-    border-right: none;
-    border-bottom: 1px solid rgba(255,255,255,0.08);
     scrollbar-width: none;
-    align-items: flex-start;
-    flex-wrap: wrap;
-    /* Allow 2 rows but never scroll vertically */
-    align-content: flex-start;
-    overflow: hidden;
+    padding: 0 2px;
   }
-  .sidebar::-webkit-scrollbar { display: none; }
+  .row1::-webkit-scrollbar,
+  .row2::-webkit-scrollbar { display: none; }
 
-  .section {
-    flex-direction: row;
-    align-items: center;
-    flex-shrink: 0;
-    gap: 5px;
-    padding: 5px 7px;
-    border-radius: 12px;
-    min-width: fit-content;
-    /* Let sections wrap into 2 rows */
-    height: 58px;
-  }
-
-  /* Hide section labels on phone */
-  .label { display: none; }
-
-  /* Bigger tap targets on phone */
-  .toolBtn {
-    width: 48px; height: 48px;
-    font-size: 1.5rem;
-    border-radius: 12px;
-    aspect-ratio: unset;
-  }
-
-  /* Tools: keep flex row on phone */
+  /* Tool buttons: big squares */
   .toolGroup {
     display: flex;
     flex-direction: row;
     gap: 5px;
-    grid-template-columns: unset;
+    flex-shrink: 0;
+  }
+  .toolBtn {
+    width: 52px;
+    height: 52px;
+    font-size: 1.5rem;
+    border-radius: 12px;
+    aspect-ratio: unset;
+    flex-shrink: 0;
   }
 
-  /* Horizontal slider */
-  .slider { width: 80px; }
-  .sizePreview { width: 44px; height: 44px; border-radius: 10px; }
+  /* Size: slider + dot side by side */
+  .sizeGroup {
+    flex-direction: row;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 8px;
+    height: 52px;
+    flex-shrink: 0;
+    border-radius: 12px;
+  }
+  .slider { width: 70px; }
+  .sizePreview {
+    width: 44px;
+    height: 44px;
+    border-radius: 10px;
+    flex-shrink: 0;
+  }
 
-  /* Palette: single row, 10 colors */
+  /* Palette: all dots in a row */
   .palette {
     display: flex;
     flex-direction: row;
     flex-wrap: nowrap;
-    gap: 5px;
+    gap: 6px;
+    padding: 6px 8px;
+    height: 52px;
+    align-items: center;
+    flex-shrink: 0;
+    border-radius: 12px;
   }
   .dot {
-    width: 36px; height: 36px;
-    border-radius: 9px;
+    width: 40px;
+    height: 40px;
+    border-radius: 10px;
     flex-shrink: 0;
-  }
-
-  /* Stickers on phone: single row */
-  .stickerGrid {
-    display: flex;
-    flex-direction: row;
-    gap: 5px;
-    grid-template-columns: unset;
-  }
-  .stickerBtn {
-    width: 44px; height: 44px;
-    font-size: 1.4rem;
-    flex-shrink: 0;
-    aspect-ratio: unset;
   }
 
   /* Custom color swatch */
-  .colorSwatch { width: 44px; height: 44px; border-radius: 12px; }
+  .colorSwatch {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    flex-shrink: 0;
+  }
 }
 
-/* ── Tablet: slightly narrower sidebar — DO NOT CHANGE ── */
+/* ── Tablet: slightly narrower — DO NOT CHANGE ── */
 @media (min-width: 769px) and (max-width: 1024px) {
   .sidebar { width: 190px; min-width: 170px; }
 }

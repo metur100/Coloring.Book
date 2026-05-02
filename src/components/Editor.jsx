@@ -1,17 +1,13 @@
-import { useRef, useState } from 'react'
 import Canvas from './Canvas.jsx'
 import Sidebar from './Sidebar.jsx'
 import styles from './Editor.module.css'
+import { useRef, useState } from 'react'
 
 export default function Editor({ image, onBack }) {
   const [tool, setTool] = useState('pen')
   const [color, setColor] = useState('#e63946')
   const [brushSize, setBrushSize] = useState(10)
   const canvasRef = useRef(null)
-
-  const handleSticker = (emoji) => {
-    canvasRef.current?.placeSticker(emoji)
-  }
 
   return (
     <div className={styles.editor}>
@@ -29,7 +25,7 @@ export default function Editor({ image, onBack }) {
           onClick={() => canvasRef.current?.save()}
           aria-label="Save image"
         >
-          💾
+          💾 
         </button>
       </header>
 
@@ -41,7 +37,6 @@ export default function Editor({ image, onBack }) {
           brushSize={brushSize} setBrushSize={setBrushSize}
           onUndo={() => canvasRef.current?.undo()}
           onClear={() => canvasRef.current?.clear()}
-          onSticker={handleSticker}
         />
 
         <main className={styles.canvasArea}>
