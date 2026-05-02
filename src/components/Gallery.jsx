@@ -13,7 +13,7 @@ export default function Gallery({ images, onSelect, onUpload, onDelete }) {
       <header className={styles.header}>
         <div className={styles.logo}>
           <span className={styles.logoIcon}>🎨</span>
-          <span className={styles.logoText}>Coloring Book</span>
+          <span className={styles.logoText}>Adijan's Coloring Book</span>
         </div>
         <p className={styles.subtitle}>Choose a page to color</p>
       </header>
