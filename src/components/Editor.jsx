@@ -9,6 +9,10 @@ export default function Editor({ image, onBack }) {
   const [brushSize, setBrushSize] = useState(10)
   const canvasRef = useRef(null)
 
+  const handleSticker = (emoji) => {
+    canvasRef.current?.placeSticker(emoji)
+  }
+
   return (
     <div className={styles.editor}>
       {/* Top bar */}
@@ -37,6 +41,7 @@ export default function Editor({ image, onBack }) {
           brushSize={brushSize} setBrushSize={setBrushSize}
           onUndo={() => canvasRef.current?.undo()}
           onClear={() => canvasRef.current?.clear()}
+          onSticker={handleSticker}
         />
 
         <main className={styles.canvasArea}>

@@ -1,20 +1,22 @@
 import styles from './Sidebar.module.css'
 
 const TOOLS = [
-  { id: 'pen',    emoji: '✏️' },
-  { id: 'eraser', emoji: '🧹' },
-  { id: 'fill',   emoji: '🪣' },
+  { id: 'pen',     emoji: '✏️' },
+  { id: 'eraser',  emoji: '🧹' },
+  { id: 'fill',    emoji: '🪣' },
+  { id: 'sticker', emoji: '⭐' },
 ]
+
+const STICKERS = ['⭐','🌈','❤️','🦄','🐉','🦁','🐸','🚀','🌟','💥','🎉','🍭','🦋','🐣','🎈']
+
+const STICKER_SIZE = 48
 
 const PRESETS = [
-  '#e63946','#ff595e','#ff006e','#f15bb5','#ff6fd8',
-  '#f4a261','#fb5607','#ffca3a','#e9c46a','#ffdd57',
-  '#8ac926','#06d6a0','#2a9d8f','#6ef0a0','#34d399',
-  '#3a86ff','#1982c4','#457b9d','#9b5de5','#6a4c93',
-  '#ffffff','#e0e0e0','#adb5bd','#555555','#212529',
+  '#e63946','#f4a261','#ffdd57','#8ac926','#3a86ff',
+  '#9b5de5','#f15bb5','#06d6a0','#ffffff','#212529',
 ]
 
-export default function Sidebar({ tool, setTool, color, setColor, brushSize, setBrushSize, onUndo, onClear }) {
+export default function Sidebar({ tool, setTool, color, setColor, brushSize, setBrushSize, onUndo, onClear, onSticker }) {
   return (
     <aside className={styles.sidebar}>
 
@@ -85,6 +87,25 @@ export default function Sidebar({ tool, setTool, color, setColor, brushSize, set
           />
         </label>
       </section>
+
+      {/* ── Stickers (shown when sticker tool active) ── */}
+      {tool === 'sticker' && (
+        <section className={styles.section}>
+          <p className={styles.label}>Stickers</p>
+          <div className={styles.stickerGrid}>
+            {STICKERS.map(s => (
+              <button
+                key={s}
+                className={styles.stickerBtn}
+                onClick={() => onSticker(s)}
+                title={s}
+              >
+                {s}
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
     </aside>
   )

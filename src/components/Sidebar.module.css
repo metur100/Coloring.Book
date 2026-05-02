@@ -32,10 +32,10 @@
   color: rgba(255,255,255,0.3);
 }
 
-/* Tools */
+/* Tools — 3 columns, 2 rows = 6 icons */
 .toolGroup {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
   gap: 6px;
 }
 
@@ -43,7 +43,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 48px; height: 48px;
+  width: 100%;
+  aspect-ratio: 1;
   border-radius: 12px;
   border: 2px solid transparent;
   background: rgba(255,255,255,0.07);
@@ -80,22 +81,48 @@
   justify-content: center;
 }
 
-/* Palette */
+/* Palette — 5 colors in one row */
 .palette {
-  display: grid;
-  grid-template-columns: repeat(5, 1fr);
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
   gap: 5px;
 }
 .dot {
-  aspect-ratio: 1;
+  width: 32px; height: 32px;
   border-radius: 8px;
   border: 2px solid transparent;
   cursor: pointer;
   transition: transform 0.14s, border-color 0.14s, box-shadow 0.14s;
-  min-height: 28px;
+  flex-shrink: 0;
 }
 .dot:hover { transform: scale(1.2); border-color: rgba(255,255,255,0.4); }
 .dotActive { border-color: #fff !important; transform: scale(1.2); box-shadow: 0 0 10px rgba(255,255,255,0.5); }
+
+/* Stickers */
+.stickerGrid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 5px;
+}
+.stickerBtn {
+  font-size: 1.5rem;
+  background: rgba(255,255,255,0.06);
+  border: 2px solid transparent;
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 4px;
+  transition: all 0.15s;
+  aspect-ratio: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.stickerBtn:hover {
+  background: rgba(255,221,87,0.2);
+  border-color: rgba(255,221,87,0.5);
+  transform: scale(1.15);
+}
 
 /* Custom color */
 .colorSwatch {
@@ -110,7 +137,7 @@
 .colorSwatch:hover { transform: scale(1.1); box-shadow: 0 0 14px rgba(255,255,255,0.2); }
 .hiddenPicker { display: none; }
 
-/* ── PHONE: horizontal TOP bar, icons only, NO vertical scroll ── */
+/* ── PHONE: 2-row horizontal top bar, icons only, NO vertical scroll ── */
 @media (max-width: 768px) {
   .sidebar {
     width: 100%;
@@ -119,13 +146,18 @@
     overflow-x: auto;
     overflow-y: hidden;
     height: auto;
-    max-height: 90px;
-    padding: 8px 10px;
-    gap: 8px;
+    /* Two rows: each row ~58px + padding = ~130px max */
+    max-height: 130px;
+    padding: 6px 8px;
+    gap: 6px;
     border-right: none;
     border-bottom: 1px solid rgba(255,255,255,0.08);
     scrollbar-width: none;
-    align-items: center;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    /* Allow 2 rows but never scroll vertically */
+    align-content: flex-start;
+    overflow: hidden;
   }
   .sidebar::-webkit-scrollbar { display: none; }
 
@@ -133,10 +165,12 @@
     flex-direction: row;
     align-items: center;
     flex-shrink: 0;
-    gap: 6px;
-    padding: 6px 8px;
-    border-radius: 14px;
+    gap: 5px;
+    padding: 5px 7px;
+    border-radius: 12px;
     min-width: fit-content;
+    /* Let sections wrap into 2 rows */
+    height: 58px;
   }
 
   /* Hide section labels on phone */
@@ -144,32 +178,53 @@
 
   /* Bigger tap targets on phone */
   .toolBtn {
-    width: 54px; height: 54px;
-    font-size: 1.6rem;
-    border-radius: 14px;
+    width: 48px; height: 48px;
+    font-size: 1.5rem;
+    border-radius: 12px;
+    aspect-ratio: unset;
+  }
+
+  /* Tools: keep flex row on phone */
+  .toolGroup {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    grid-template-columns: unset;
   }
 
   /* Horizontal slider */
-  .slider { width: 90px; }
-  .sizePreview { width: 46px; height: 46px; border-radius: 10px; }
+  .slider { width: 80px; }
+  .sizePreview { width: 44px; height: 44px; border-radius: 10px; }
 
-  /* Palette: single row, bigger dots */
+  /* Palette: single row, 10 colors */
   .palette {
     display: flex;
     flex-direction: row;
-    gap: 6px;
-    grid-template-columns: unset;
+    flex-wrap: nowrap;
+    gap: 5px;
   }
   .dot {
-    width: 38px; height: 38px;
-    border-radius: 10px;
+    width: 36px; height: 36px;
+    border-radius: 9px;
+    flex-shrink: 0;
+  }
+
+  /* Stickers on phone: single row */
+  .stickerGrid {
+    display: flex;
+    flex-direction: row;
+    gap: 5px;
+    grid-template-columns: unset;
+  }
+  .stickerBtn {
+    width: 44px; height: 44px;
+    font-size: 1.4rem;
     flex-shrink: 0;
     aspect-ratio: unset;
-    min-height: unset;
   }
 
   /* Custom color swatch */
-  .colorSwatch { width: 46px; height: 46px; border-radius: 12px; }
+  .colorSwatch { width: 44px; height: 44px; border-radius: 12px; }
 }
 
 /* ── Tablet: slightly narrower sidebar — DO NOT CHANGE ── */

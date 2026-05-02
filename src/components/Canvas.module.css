@@ -39,8 +39,14 @@
 }
 
 /* On tablets/mobile, scale canvas to fit width */
+/* On phone/tablet: scale canvas to fit width so no clipping */
 @media (max-width: 1024px) {
   .wrapper { max-width: 100%; }
   .canvas { max-width: 100%; height: auto; }
   .overlay { width: 100% !important; height: 100% !important; }
+}
+
+/* On desktop: canvas renders at native size, parent scrolls */
+@media (min-width: 1025px) {
+  .wrapper { flex-shrink: 0; }
 }

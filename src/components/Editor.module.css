@@ -76,7 +76,7 @@
   min-height: 0;
 }
 
-/* Canvas area: scrollable so full image is always reachable */
+/* Canvas area: scrollable in BOTH directions so full image is always reachable */
 .canvasArea {
   flex: 1;
   overflow: auto;
@@ -88,8 +88,10 @@
     radial-gradient(ellipse at 20% 60%, rgba(124,58,237,0.07) 0%, transparent 55%),
     radial-gradient(ellipse at 80% 20%, rgba(59,130,246,0.07) 0%, transparent 55%),
     #0d0f1a;
+  /* Critical: allow natural canvas size to overflow and be scrolled */
   min-width: 0;
   min-height: 0;
+  box-sizing: border-box;
 }
 
 /* ── Mobile: sidebar goes to TOP, no vertical scroll ── */

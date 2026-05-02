@@ -105,7 +105,25 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     a.click()
   }, [image.name])
 
-  useImperativeHandle(ref, () => ({ undo, clear, save }))
+  // ── Sticker placement ────────────────────────────────────────
+  const STICKER_SIZE = 64
+  const placeSticker = useCallback((emoji) => {
+    const ov = ovRef.current; if (!ov) return
+    pushHistory()
+    const ctx = ov.getContext('2d')
+    const x = Math.round(ov.width / 2)
+    const y = Math.round(ov.height / 2)
+    ctx.save()
+    ctx.font = `${STICKER_SIZE}px serif`
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'middle'
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.fillText(emoji, x, y)
+    ctx.restore()
+    scheduleSave()
+  }, [scheduleSave])
+
+  useImperativeHandle(ref, () => ({ undo, clear, save, placeSticker }))
 
   // ── Fill ─────────────────────────────────────────────────────
   const doFill = useCallback((pos) => {
