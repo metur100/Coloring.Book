@@ -10,145 +10,140 @@ export function useCanvas({ canvasRef, overlayRef, tool, color, brushSize, uploa
     const rect = canvas.getBoundingClientRect()
     const scaleX = canvas.width / rect.width
     const scaleY = canvas.height / rect.height
-    if (e.touches && e.touches.length > 0) {
-      return {
-        x: (e.touches[0].clientX - rect.left) * scaleX,
-        y: (e.touches[0].clientY - rect.top) * scaleY,
-      }
-    }
+    const src = e.touches?.[0] ?? e
     return {
-      x: (e.clientX - rect.left) * scaleX,
-      y: (e.clientY - rect.top) * scaleY,
+      x: (src.clientX - rect.left) * scaleX,
+      y: (src.clientY - rect.top) * scaleY,
     }
   }, [])
 
   const pushHistory = useCallback(() => {
-    const canvas = overlayRef.current
-    if (!canvas) return
-    const ctx = canvas.getContext('2d')
-    historyRef.current.push(ctx.getImageData(0, 0, canvas.width, canvas.height))
+    const c = overlayRef.current
+    if (!c) return
+    const snap = c.getContext('2d').getImageData(0, 0, c.width, c.height)
+    historyRef.current.push(snap)
     if (historyRef.current.length > 50) historyRef.current.shift()
   }, [overlayRef])
 
   const undo = useCallback(() => {
-    const canvas = overlayRef.current
-    if (!canvas || historyRef.current.length === 0) return
-    canvas.getContext('2d').putImageData(historyRef.current.pop(), 0, 0)
+    const c = overlayRef.current
+    if (!c || !historyRef.current.length) return
+    c.getContext('2d').putImageData(historyRef.current.pop(), 0, 0)
   }, [overlayRef])
 
   const clear = useCallback(() => {
-    const canvas = overlayRef.current
-    if (!canvas) return
+    const c = overlayRef.current
+    if (!c) return
     pushHistory()
-    canvas.getContext('2d').clearRect(0, 0, canvas.width, canvas.height)
+    const ctx = c.getContext('2d')
+    ctx.fillStyle = '#ffffff'
+    ctx.fillRect(0, 0, c.width, c.height)
   }, [overlayRef, pushHistory])
 
-  const save = useCallback(() => {
+  // Save with chosen frame
+  const save = useCallback((frameStyle) => {
     const bg = canvasRef.current
-    const overlay = overlayRef.current
-    if (!bg || !overlay) return
-    const merged = document.createElement('canvas')
-    merged.width = bg.width
-    merged.height = bg.height
-    const ctx = merged.getContext('2d')
-    ctx.drawImage(bg, 0, 0)
-    // Draw overlay with multiply so lines stay visible in saved image too
+    const ov = overlayRef.current
+    if (!bg || !ov) return
+
+    const pad = frameStyle?.padding ?? 0
+    const W = bg.width + pad * 2
+    const H = bg.height + pad * 2
+
+    const out = document.createElement('canvas')
+    out.width = W; out.height = H
+    const ctx = out.getContext('2d')
+
+    // Frame background
+    if (frameStyle?.background) {
+      ctx.fillStyle = frameStyle.background
+      ctx.fillRect(0, 0, W, H)
+    }
+
+    // Draw image + coloring
+    ctx.drawImage(bg, pad, pad)
+    ctx.save()
     ctx.globalCompositeOperation = 'multiply'
-    ctx.drawImage(overlay, 0, 0)
+    ctx.drawImage(ov, pad, pad)
+    ctx.restore()
+
+    // Frame border overlay
+    if (frameStyle?.border) {
+      ctx.strokeStyle = frameStyle.border
+      ctx.lineWidth = frameStyle.borderWidth ?? 12
+      ctx.strokeRect(
+        frameStyle.borderWidth/2, frameStyle.borderWidth/2,
+        W - frameStyle.borderWidth, H - frameStyle.borderWidth
+      )
+    }
+    if (frameStyle?.cornerFn) frameStyle.cornerFn(ctx, W, H)
+
     const link = document.createElement('a')
-    link.download = 'my-coloring-page.png'
-    link.href = merged.toDataURL('image/png')
+    link.download = 'coloring-page.png'
+    link.href = out.toDataURL('image/png')
     link.click()
   }, [canvasRef, overlayRef])
 
-  // Load image onto background canvas
+  // Load image
   useEffect(() => {
     if (!uploadedImage || !canvasRef.current) return
-    const canvas = canvasRef.current
-    const ctx = canvas.getContext('2d')
+    const bg = canvasRef.current
+    const ov = overlayRef.current
     const img = new Image()
     img.onload = () => {
-      const maxW = 1200
+      const maxW = 1400
       const scale = Math.min(1, maxW / img.naturalWidth)
-      canvas.width = img.naturalWidth * scale
-      canvas.height = img.naturalHeight * scale
-      const overlay = overlayRef.current
-      if (overlay) {
-        overlay.width = canvas.width
-        overlay.height = canvas.height
+      bg.width = Math.round(img.naturalWidth * scale)
+      bg.height = Math.round(img.naturalHeight * scale)
+      if (ov) { ov.width = bg.width; ov.height = bg.height }
+      bg.getContext('2d').drawImage(img, 0, 0, bg.width, bg.height)
+      if (ov) {
+        const ctx = ov.getContext('2d')
+        ctx.fillStyle = '#ffffff'
+        ctx.fillRect(0, 0, ov.width, ov.height)
       }
-      // Fill overlay with white so multiply blending works correctly
-      const overlayCtx = overlay?.getContext('2d')
-      if (overlayCtx) {
-        overlayCtx.fillStyle = '#ffffff'
-        overlayCtx.fillRect(0, 0, canvas.width, canvas.height)
-      }
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
       historyRef.current = []
     }
     img.src = uploadedImage
   }, [uploadedImage, canvasRef, overlayRef])
 
-  /**
-   * For flood fill we need to sample the MERGED visible pixels (bg + overlay)
-   * so the fill respects the black outlines from the image layer.
-   * We composite both canvases into a temporary canvas, read its pixels,
-   * run flood fill, then write the result back to the overlay only.
-   */
+  // Fill tool — samples merged canvas so outlines act as walls
   const doFill = useCallback((pos) => {
     const bg = canvasRef.current
-    const overlay = overlayRef.current
-    if (!bg || !overlay) return
+    const ov = overlayRef.current
+    if (!bg || !ov) return
+    const tmp = document.createElement('canvas')
+    tmp.width = bg.width; tmp.height = bg.height
+    const tCtx = tmp.getContext('2d')
+    tCtx.drawImage(bg, 0, 0)
+    tCtx.globalCompositeOperation = 'multiply'
+    tCtx.drawImage(ov, 0, 0)
+    tCtx.globalCompositeOperation = 'source-over'
 
-    // Build merged snapshot for sampling
-    const merged = document.createElement('canvas')
-    merged.width = bg.width
-    merged.height = bg.height
-    const mCtx = merged.getContext('2d')
-    mCtx.drawImage(bg, 0, 0)
-    mCtx.globalCompositeOperation = 'multiply'
-    mCtx.drawImage(overlay, 0, 0)
-    mCtx.globalCompositeOperation = 'source-over'
+    const x = Math.floor(pos.x), y = Math.floor(pos.y)
+    if (x < 0 || x >= tmp.width || y < 0 || y >= tmp.height) return
 
-    const x = Math.floor(pos.x)
-    const y = Math.floor(pos.y)
-    if (x < 0 || x >= merged.width || y < 0 || y >= merged.height) return
+    const imgData = tCtx.getImageData(0, 0, tmp.width, tmp.height)
+    floodFill(imgData, x, y, hexToRgba(color))
 
-    // Run fill on merged image data
-    const imageData = mCtx.getImageData(0, 0, merged.width, merged.height)
-    const filled = floodFill(imageData, x, y, hexToRgba(color))
-
-    // Apply only the changed pixels back to the overlay
-    const overlayCtx = overlay.getContext('2d')
-    const overlayData = overlayCtx.getImageData(0, 0, overlay.width, overlay.height)
-    const src = filled.data
-    const dst = overlayData.data
-
-    // Get merged original for comparison
-    const origData = mCtx.getImageData(0, 0, merged.width, merged.height).data
-
-    const [fr, fg, fb] = hexToRgba(color)
-    for (let i = 0; i < src.length; i += 4) {
-      if (src[i] === fr && src[i+1] === fg && src[i+2] === fb) {
-        dst[i]     = fr
-        dst[i + 1] = fg
-        dst[i + 2] = fb
-        dst[i + 3] = 255
+    // Write filled pixels back to overlay
+    const ovCtx = ov.getContext('2d')
+    const ovData = ovCtx.getImageData(0, 0, ov.width, ov.height)
+    const [fR, fG, fB] = hexToRgba(color)
+    for (let i = 0; i < imgData.data.length; i += 4) {
+      if (imgData.data[i]===fR && imgData.data[i+1]===fG && imgData.data[i+2]===fB) {
+        ovData.data[i]=fR; ovData.data[i+1]=fG; ovData.data[i+2]=fB; ovData.data[i+3]=255
       }
     }
-    overlayCtx.putImageData(overlayData, 0, 0)
+    ovCtx.putImageData(ovData, 0, 0)
   }, [canvasRef, overlayRef, color])
 
   const startDraw = useCallback((e) => {
     e.preventDefault()
-    const overlay = overlayRef.current
-    if (!overlay) return
-    const pos = getPos(e, overlay)
-    if (tool === 'fill') {
-      pushHistory()
-      doFill(pos)
-      return
-    }
+    const ov = overlayRef.current
+    if (!ov) return
+    const pos = getPos(e, ov)
+    if (tool === 'fill') { pushHistory(); doFill(pos); return }
     pushHistory()
     isDrawing.current = true
     lastPos.current = pos
@@ -157,21 +152,15 @@ export function useCanvas({ canvasRef, overlayRef, tool, color, brushSize, uploa
   const draw = useCallback((e) => {
     e.preventDefault()
     if (!isDrawing.current) return
-    const overlay = overlayRef.current
-    if (!overlay) return
-    const ctx = overlay.getContext('2d')
-    const pos = getPos(e, overlay)
+    const ov = overlayRef.current
+    if (!ov) return
+    const ctx = ov.getContext('2d')
+    const pos = getPos(e, ov)
     ctx.lineWidth = tool === 'eraser' ? brushSize * 3 : brushSize
     ctx.lineCap = 'round'
     ctx.lineJoin = 'round'
-    if (tool === 'eraser') {
-      // Erase back to white (not transparent) so multiply still works
-      ctx.globalCompositeOperation = 'source-over'
-      ctx.strokeStyle = '#ffffff'
-    } else {
-      ctx.globalCompositeOperation = 'source-over'
-      ctx.strokeStyle = color
-    }
+    ctx.globalCompositeOperation = 'source-over'
+    ctx.strokeStyle = tool === 'eraser' ? '#ffffff' : color
     ctx.beginPath()
     ctx.moveTo(lastPos.current.x, lastPos.current.y)
     ctx.lineTo(pos.x, pos.y)
@@ -186,23 +175,23 @@ export function useCanvas({ canvasRef, overlayRef, tool, color, brushSize, uploa
   }, [])
 
   useEffect(() => {
-    const overlay = overlayRef.current
-    if (!overlay) return
-    overlay.addEventListener('mousedown', startDraw)
-    overlay.addEventListener('mousemove', draw)
-    overlay.addEventListener('mouseup', stopDraw)
-    overlay.addEventListener('mouseleave', stopDraw)
-    overlay.addEventListener('touchstart', startDraw, { passive: false })
-    overlay.addEventListener('touchmove', draw, { passive: false })
-    overlay.addEventListener('touchend', stopDraw, { passive: false })
+    const ov = overlayRef.current
+    if (!ov) return
+    ov.addEventListener('mousedown', startDraw)
+    ov.addEventListener('mousemove', draw)
+    ov.addEventListener('mouseup', stopDraw)
+    ov.addEventListener('mouseleave', stopDraw)
+    ov.addEventListener('touchstart', startDraw, { passive: false })
+    ov.addEventListener('touchmove', draw, { passive: false })
+    ov.addEventListener('touchend', stopDraw, { passive: false })
     return () => {
-      overlay.removeEventListener('mousedown', startDraw)
-      overlay.removeEventListener('mousemove', draw)
-      overlay.removeEventListener('mouseup', stopDraw)
-      overlay.removeEventListener('mouseleave', stopDraw)
-      overlay.removeEventListener('touchstart', startDraw)
-      overlay.removeEventListener('touchmove', draw)
-      overlay.removeEventListener('touchend', stopDraw)
+      ov.removeEventListener('mousedown', startDraw)
+      ov.removeEventListener('mousemove', draw)
+      ov.removeEventListener('mouseup', stopDraw)
+      ov.removeEventListener('mouseleave', stopDraw)
+      ov.removeEventListener('touchstart', startDraw)
+      ov.removeEventListener('touchmove', draw)
+      ov.removeEventListener('touchend', stopDraw)
     }
   }, [overlayRef, startDraw, draw, stopDraw])
 

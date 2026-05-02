@@ -1,0 +1,187 @@
+.sidebar {
+  width: 200px;
+  min-width: 180px;
+  background: rgba(255,255,255,0.03);
+  border-right: 1px solid rgba(255,255,255,0.07);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px;
+  overflow-y: auto;
+  flex-shrink: 0;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+.section {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 0.65rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: rgba(255,255,255,0.35);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sizeVal {
+  font-weight: 700;
+  color: #a78bfa;
+  font-size: 0.75rem;
+}
+
+.toolGroup {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.toolBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.7);
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 600;
+  transition: all 0.18s;
+  text-align: left;
+}
+.toolBtn:hover {
+  background: rgba(167,139,250,0.15);
+  color: #fff;
+  border-color: rgba(167,139,250,0.3);
+}
+.toolBtn.active {
+  background: linear-gradient(135deg, rgba(167,139,250,0.3), rgba(96,165,250,0.2));
+  border-color: rgba(167,139,250,0.6);
+  color: #fff;
+  box-shadow: 0 0 12px rgba(167,139,250,0.2);
+}
+
+.toolIcon { font-size: 1rem; width: 20px; text-align: center; }
+.toolLabel { font-size: 0.82rem; }
+
+.slider {
+  width: 100%;
+  accent-color: #a78bfa;
+  cursor: pointer;
+}
+
+.sizePreview {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 52px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+.pickerRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.colorWrap {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  overflow: hidden;
+  border: 2px solid rgba(255,255,255,0.15);
+  flex-shrink: 0;
+  cursor: pointer;
+}
+
+.colorInput {
+  position: absolute;
+  inset: -4px;
+  width: calc(100% + 8px);
+  height: calc(100% + 8px);
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.colorIcon {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  pointer-events: none;
+  background: var(--c, #e63946);
+}
+
+.hexLabel {
+  font-size: 0.75rem;
+  font-family: 'Courier New', monospace;
+  color: rgba(255,255,255,0.5);
+  font-weight: 600;
+}
+
+.swatches {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+}
+
+.swatch {
+  aspect-ratio: 1;
+  border-radius: 6px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.15s, border-color 0.15s, box-shadow 0.15s;
+}
+.swatch:hover { transform: scale(1.2); border-color: rgba(255,255,255,0.4); }
+.selectedSwatch {
+  border-color: #fff !important;
+  transform: scale(1.2);
+  box-shadow: 0 0 8px rgba(255,255,255,0.4);
+}
+
+/* Mobile */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    min-width: unset;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: auto;
+    padding: 8px;
+    gap: 8px;
+    border-right: none;
+    border-top: 1px solid rgba(255,255,255,0.07);
+    order: 2;
+  }
+  .section {
+    flex-shrink: 0;
+    min-width: fit-content;
+  }
+  .toolGroup { flex-direction: row; }
+  .toolLabel { display: none; }
+  .toolBtn { padding: 8px; gap: 0; }
+  .toolIcon { font-size: 1.2rem; width: auto; }
+  .sizePreview { height: 36px; width: 60px; }
+  .swatches { grid-template-columns: repeat(10, 1fr); }
+}

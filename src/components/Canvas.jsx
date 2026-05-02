@@ -3,8 +3,8 @@ import { useCanvas } from '../hooks/useCanvas'
 import styles from './Canvas.module.css'
 
 const Canvas = forwardRef(function Canvas({ tool, color, brushSize, uploadedImage }, ref) {
-  const canvasRef = useRef(null)   // background – holds the image
-  const overlayRef = useRef(null)  // foreground – holds all drawings
+  const canvasRef = useRef(null)
+  const overlayRef = useRef(null)
 
   const { undo, clear, save } = useCanvas({
     canvasRef, overlayRef, tool, color, brushSize, uploadedImage,

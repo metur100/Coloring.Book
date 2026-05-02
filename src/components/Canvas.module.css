@@ -1,27 +1,25 @@
 .wrapper {
   position: relative;
   display: inline-block;
-  box-shadow: 0 4px 24px rgba(0,0,0,0.25);
-  border-radius: 4px;
+  border-radius: 8px;
   overflow: hidden;
-  /* Let the wrapper shrink to fit the canvas naturally */
-  max-width: 100%;
+  box-shadow:
+    0 0 0 1px rgba(255,255,255,0.08),
+    0 8px 40px rgba(0,0,0,0.6);
+  flex-shrink: 0;
 }
 
 .canvas {
   display: block;
-  /* Scale down if wider than container, never upscale */
   max-width: 100%;
   height: auto;
 }
 
 .overlay {
   position: absolute;
-  top: 0;
-  left: 0;
+  inset: 0;
   width: 100%;
   height: 100%;
-  /* Multiply blending: colors show through black lines */
   mix-blend-mode: multiply;
 }
 
