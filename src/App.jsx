@@ -12,8 +12,8 @@ export default function App() {
   useEffect(() => { saveImages(images) }, [images])
 
   const handleUpload = (files) => {
-    const remaining = 10 - images.length
-    if (remaining <= 0) return alert('Maximum 10 images reached.')
+    const remaining = 30 - images.length
+    if (remaining <= 0) return alert('Maximum 30 images reached.')
     Array.from(files).slice(0, remaining).forEach(file => {
       if (!file.type.startsWith('image/')) return
       const reader = new FileReader()

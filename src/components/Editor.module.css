@@ -24,35 +24,29 @@
 .backBtn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: 10px;
+  justify-content: center;
+  width: 44px; height: 44px;
+  border-radius: 12px;
   border: 1px solid rgba(255,255,255,0.1);
   background: rgba(255,255,255,0.06);
-  color: rgba(255,255,255,0.8);
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 700;
+  color: rgba(255,255,255,0.9);
+  font-size: 1.3rem;
   cursor: pointer;
   transition: all 0.18s;
-  white-space: nowrap;
   flex-shrink: 0;
 }
-.backBtn:hover { background: rgba(255,255,255,0.12); color: #fff; }
+.backBtn:hover { background: rgba(255,255,255,0.14); }
 
 .imageTitle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
   flex: 1;
+  display: flex;
   justify-content: center;
   overflow: hidden;
 }
-.titleIcon { font-size: 1.1rem; flex-shrink: 0; }
 .titleText {
   font-size: 0.95rem;
   font-weight: 800;
-  color: rgba(255,255,255,0.75);
+  color: rgba(255,255,255,0.7);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -61,18 +55,15 @@
 .saveBtn {
   display: flex;
   align-items: center;
-  gap: 6px;
-  padding: 7px 14px;
-  border-radius: 10px;
+  justify-content: center;
+  width: 44px; height: 44px;
+  border-radius: 12px;
   border: 1px solid rgba(52,211,153,0.3);
   background: rgba(52,211,153,0.12);
   color: #6ee7b7;
-  font-family: inherit;
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-size: 1.3rem;
   cursor: pointer;
   transition: all 0.18s;
-  white-space: nowrap;
   flex-shrink: 0;
 }
 .saveBtn:hover { background: rgba(52,211,153,0.25); color: #fff; }
@@ -101,14 +92,14 @@
   min-height: 0;
 }
 
-/* ── Mobile: sidebar goes to bottom ── */
+/* ── Mobile: sidebar goes to TOP, no vertical scroll ── */
 @media (max-width: 768px) {
-  .body { flex-direction: column-reverse; }
+  .body { flex-direction: column; }
   .canvasArea {
     flex: 1;
-    padding: 12px;
-    /* On mobile the canvas is fit-to-width, no need to scroll vertically */
+    padding: 10px;
     align-items: flex-start;
     justify-content: flex-start;
+    overflow: auto;
   }
 }

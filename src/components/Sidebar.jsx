@@ -1,22 +1,24 @@
 import styles from './Sidebar.module.css'
 
 const TOOLS = [
-  { id: 'pen',    emoji: '✏️', label: 'Pen' },
-  { id: 'eraser', emoji: '⬜', label: 'Erase' },
-  { id: 'fill',   emoji: '🪣', label: 'Fill' },
+  { id: 'pen',    emoji: '✏️' },
+  { id: 'eraser', emoji: '🧹' },
+  { id: 'fill',   emoji: '🪣' },
 ]
 
 const PRESETS = [
-  '#e63946','#f4a261','#e9c46a','#2a9d8f','#457b9d',
-  '#9b5de5','#f15bb5','#ffffff','#adb5bd','#212529',
-  '#ff595e','#ffca3a','#6a4c93','#1982c4','#8ac926',
-  '#ff006e','#fb5607','#3a86ff','#06d6a0','#118ab2',
+  '#e63946','#ff595e','#ff006e','#f15bb5','#ff6fd8',
+  '#f4a261','#fb5607','#ffca3a','#e9c46a','#ffdd57',
+  '#8ac926','#06d6a0','#2a9d8f','#6ef0a0','#34d399',
+  '#3a86ff','#1982c4','#457b9d','#9b5de5','#6a4c93',
+  '#ffffff','#e0e0e0','#adb5bd','#555555','#212529',
 ]
 
 export default function Sidebar({ tool, setTool, color, setColor, brushSize, setBrushSize, onUndo, onClear }) {
   return (
     <aside className={styles.sidebar}>
-      {/* ── Tools ── */}
+
+      {/* ── Tools + Actions (combined) ── */}
       <section className={styles.section}>
         <p className={styles.label}>Tools</p>
         <div className={styles.toolGroup}>
@@ -25,17 +27,19 @@ export default function Sidebar({ tool, setTool, color, setColor, brushSize, set
               key={t.id}
               className={`${styles.toolBtn} ${tool===t.id ? styles.active : ''}`}
               onClick={() => setTool(t.id)}
+              title={t.id}
             >
-              <span className={styles.toolEmoji}>{t.emoji}</span>
-              <span>{t.label}</span>
+              {t.emoji}
             </button>
           ))}
+          <button className={styles.toolBtn} onClick={onUndo} title="Undo">↩️</button>
+          <button className={`${styles.toolBtn} ${styles.dangerTool}`} onClick={onClear} title="Clear">🗑️</button>
         </div>
       </section>
 
       {/* ── Size ── */}
       <section className={styles.section}>
-        <p className={styles.label}>Size <span className={styles.sizeVal}>{brushSize}px</span></p>
+        <p className={styles.label}>Size</p>
         <input
           type="range" min={1} max={60} value={brushSize}
           onChange={e => setBrushSize(Number(e.target.value))}
@@ -54,24 +58,9 @@ export default function Sidebar({ tool, setTool, color, setColor, brushSize, set
         </div>
       </section>
 
-      {/* ── Color ── */}
+      {/* ── Palette FIRST ── */}
       <section className={styles.section}>
-        <p className={styles.label}>Color</p>
-        <div className={styles.colorRow}>
-          <label className={styles.colorSwatch} style={{ background: color }}>
-            <input
-              type="color" value={color}
-              onChange={e => setColor(e.target.value)}
-              className={styles.hiddenPicker}
-            />
-          </label>
-          <span className={styles.hexLabel}>{color.toUpperCase()}</span>
-        </div>
-      </section>
-
-      {/* ── Palette ── */}
-      <section className={styles.section}>
-        <p className={styles.label}>Palette</p>
+        <p className={styles.label}>Colors</p>
         <div className={styles.palette}>
           {PRESETS.map(c => (
             <button
@@ -85,16 +74,18 @@ export default function Sidebar({ tool, setTool, color, setColor, brushSize, set
         </div>
       </section>
 
-      {/* ── Actions ── */}
+      {/* ── Custom Color picker AFTER palette ── */}
       <section className={styles.section}>
-        <p className={styles.label}>Actions</p>
-        <button className={styles.actionBtn} onClick={onUndo}>
-          ↩️ Undo
-        </button>
-        <button className={`${styles.actionBtn} ${styles.danger}`} onClick={onClear}>
-          🗑️ Clear
-        </button>
+        <p className={styles.label}>Custom</p>
+        <label className={styles.colorSwatch} style={{ background: color }}>
+          <input
+            type="color" value={color}
+            onChange={e => setColor(e.target.value)}
+            className={styles.hiddenPicker}
+          />
+        </label>
       </section>
+
     </aside>
   )
 }

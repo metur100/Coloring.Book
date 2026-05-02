@@ -14,7 +14,7 @@ export default function Editor({ image, onBack }) {
       {/* Top bar */}
       <header className={styles.topbar}>
         <button className={styles.backBtn} onClick={onBack} aria-label="Back to gallery">
-          ← Gallery
+          ← 
         </button>
         <div className={styles.imageTitle}>
           <span className={styles.titleIcon}>🖼️</span>
@@ -25,7 +25,7 @@ export default function Editor({ image, onBack }) {
           onClick={() => canvasRef.current?.save()}
           aria-label="Save image"
         >
-          💾 Save PNG
+          💾
         </button>
       </header>
 
