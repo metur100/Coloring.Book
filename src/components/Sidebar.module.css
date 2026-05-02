@@ -1,0 +1,173 @@
+/* ── Desktop / tablet: vertical left sidebar ── */
+.sidebar {
+  width: 210px;
+  min-width: 190px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  background: rgba(255,255,255,0.025);
+  border-right: 1px solid rgba(255,255,255,0.06);
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255,255,255,0.1) transparent;
+}
+
+.section {
+  background: rgba(255,255,255,0.04);
+  border: 1px solid rgba(255,255,255,0.07);
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.label {
+  font-size: 0.62rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255,255,255,0.3);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.sizeVal { color: #a78bfa; font-size: 0.72rem; }
+
+/* Tools */
+.toolGroup { display: flex; flex-direction: column; gap: 5px; }
+
+.toolBtn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.65);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s;
+}
+.toolBtn:hover {
+  background: rgba(167,139,250,0.14);
+  color: #fff;
+  border-color: rgba(167,139,250,0.25);
+}
+.toolBtn.active {
+  background: linear-gradient(135deg, rgba(167,139,250,0.28), rgba(96,165,250,0.18));
+  border-color: rgba(167,139,250,0.55);
+  color: #fff;
+  box-shadow: 0 0 14px rgba(167,139,250,0.18);
+}
+.toolEmoji { font-size: 1rem; width: 22px; text-align: center; }
+
+/* Size */
+.slider { width: 100%; accent-color: #a78bfa; cursor: pointer; }
+.sizePreview {
+  height: 52px;
+  background: rgba(255,255,255,0.04);
+  border-radius: 8px;
+  border: 1px solid rgba(255,255,255,0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Color */
+.colorRow { display: flex; align-items: center; gap: 10px; }
+.colorSwatch {
+  width: 38px; height: 38px;
+  border-radius: 10px;
+  border: 2px solid rgba(255,255,255,0.2);
+  cursor: pointer;
+  flex-shrink: 0;
+  display: block;
+  transition: transform 0.15s;
+}
+.colorSwatch:hover { transform: scale(1.1); }
+.hiddenPicker { display: none; }
+.hexLabel { font-size: 0.75rem; font-family: monospace; color: rgba(255,255,255,0.45); font-weight: 700; }
+
+/* Palette */
+.palette {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 5px;
+}
+.dot {
+  aspect-ratio: 1;
+  border-radius: 7px;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform 0.14s, border-color 0.14s, box-shadow 0.14s;
+}
+.dot:hover { transform: scale(1.18); border-color: rgba(255,255,255,0.35); }
+.dotActive { border-color: #fff !important; transform: scale(1.18); box-shadow: 0 0 8px rgba(255,255,255,0.4); }
+
+/* Actions */
+.actionBtn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(255,255,255,0.08);
+  background: rgba(255,255,255,0.05);
+  color: rgba(255,255,255,0.75);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.16s;
+  width: 100%;
+}
+.actionBtn:hover { background: rgba(255,255,255,0.1); color: #fff; }
+.danger { border-color: rgba(239,68,68,0.25); color: #fca5a5; }
+.danger:hover { background: rgba(239,68,68,0.18); color: #fff; }
+
+/* ── Mobile: sidebar becomes horizontal bottom strip ── */
+@media (max-width: 768px) {
+  .sidebar {
+    width: 100%;
+    min-width: unset;
+    flex-direction: row;
+    overflow-x: auto;
+    overflow-y: hidden;
+    height: auto;
+    padding: 8px;
+    gap: 8px;
+    border-right: none;
+    border-top: 1px solid rgba(255,255,255,0.06);
+    scrollbar-width: none;
+  }
+  .sidebar::-webkit-scrollbar { display: none; }
+  .section {
+    flex-direction: row;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 6px;
+    padding: 8px 10px;
+    min-width: fit-content;
+  }
+  .label { display: none; }
+  .toolGroup { flex-direction: row; gap: 4px; }
+  .toolBtn { padding: 8px 10px; gap: 5px; font-size: 0.78rem; }
+  .slider { width: 100px; }
+  .sizePreview { width: 44px; height: 36px; }
+  .palette { grid-template-columns: repeat(10, 28px); }
+  .dot { width: 28px; height: 28px; }
+  .actionBtn { white-space: nowrap; padding: 8px 10px; font-size: 0.8rem; }
+  .colorSwatch { width: 34px; height: 34px; }
+}
+
+/* ── Tablet: slightly narrower sidebar ── */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .sidebar { width: 190px; min-width: 170px; }
+}

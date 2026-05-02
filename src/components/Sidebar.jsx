@@ -1,9 +1,9 @@
-import styles from './LeftSidebar.module.css'
+import styles from './Sidebar.module.css'
 
 const TOOLS = [
-  { id: 'pen',    icon: '✏️', label: 'Pen' },
-  { id: 'eraser', icon: '⬜', label: 'Erase' },
-  { id: 'fill',   icon: '🪣', label: 'Fill' },
+  { id: 'pen',    emoji: '✏️', label: 'Pen' },
+  { id: 'eraser', emoji: '⬜', label: 'Erase' },
+  { id: 'fill',   emoji: '🪣', label: 'Fill' },
 ]
 
 const PRESETS = [
@@ -13,28 +13,27 @@ const PRESETS = [
   '#ff006e','#fb5607','#3a86ff','#06d6a0','#118ab2',
 ]
 
-export default function LeftSidebar({ tool, setTool, color, setColor, brushSize, setBrushSize }) {
+export default function Sidebar({ tool, setTool, color, setColor, brushSize, setBrushSize, onUndo, onClear }) {
   return (
     <aside className={styles.sidebar}>
-      {/* Tools */}
+      {/* ── Tools ── */}
       <section className={styles.section}>
         <p className={styles.label}>Tools</p>
         <div className={styles.toolGroup}>
           {TOOLS.map(t => (
             <button
               key={t.id}
-              className={`${styles.toolBtn} ${tool === t.id ? styles.active : ''}`}
+              className={`${styles.toolBtn} ${tool===t.id ? styles.active : ''}`}
               onClick={() => setTool(t.id)}
-              title={t.label}
             >
-              <span className={styles.toolIcon}>{t.icon}</span>
-              <span className={styles.toolLabel}>{t.label}</span>
+              <span className={styles.toolEmoji}>{t.emoji}</span>
+              <span>{t.label}</span>
             </button>
           ))}
         </div>
       </section>
 
-      {/* Brush size */}
+      {/* ── Size ── */}
       <section className={styles.section}>
         <p className={styles.label}>Size <span className={styles.sizeVal}>{brushSize}px</span></p>
         <input
@@ -44,45 +43,57 @@ export default function LeftSidebar({ tool, setTool, color, setColor, brushSize,
         />
         <div className={styles.sizePreview}>
           <div style={{
-            width: Math.min(brushSize, 48), height: Math.min(brushSize, 48),
-            borderRadius: '50%', background: color,
-            boxShadow: `0 0 8px ${color}88`,
-            transition: 'all 0.2s',
+            width: `${Math.min(brushSize, 44)}px`,
+            height: `${Math.min(brushSize, 44)}px`,
+            borderRadius: '50%',
+            background: color,
+            boxShadow: `0 0 10px ${color}88`,
+            transition: 'all 0.15s',
+            flexShrink: 0,
           }} />
         </div>
       </section>
 
-      {/* Color picker */}
+      {/* ── Color ── */}
       <section className={styles.section}>
         <p className={styles.label}>Color</p>
-        <div className={styles.pickerRow}>
-          <div className={styles.colorWrap}>
+        <div className={styles.colorRow}>
+          <label className={styles.colorSwatch} style={{ background: color }}>
             <input
               type="color" value={color}
               onChange={e => setColor(e.target.value)}
-              className={styles.colorInput}
-              title="Custom color"
+              className={styles.hiddenPicker}
             />
-            <span className={styles.colorIcon}>🎨</span>
-          </div>
+          </label>
           <span className={styles.hexLabel}>{color.toUpperCase()}</span>
         </div>
       </section>
 
-      {/* Preset swatches */}
+      {/* ── Palette ── */}
       <section className={styles.section}>
         <p className={styles.label}>Palette</p>
-        <div className={styles.swatches}>
+        <div className={styles.palette}>
           {PRESETS.map(c => (
             <button
               key={c}
-              className={`${styles.swatch} ${color === c ? styles.selectedSwatch : ''}`}
+              className={`${styles.dot} ${color===c ? styles.dotActive : ''}`}
               style={{ background: c }}
               onClick={() => setColor(c)}
               title={c}
             />
           ))}
         </div>
+      </section>
+
+      {/* ── Actions ── */}
+      <section className={styles.section}>
+        <p className={styles.label}>Actions</p>
+        <button className={styles.actionBtn} onClick={onUndo}>
+          ↩️ Undo
+        </button>
+        <button className={`${styles.actionBtn} ${styles.danger}`} onClick={onClear}>
+          🗑️ Clear
+        </button>
       </section>
     </aside>
   )
