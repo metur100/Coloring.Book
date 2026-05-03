@@ -9,32 +9,44 @@ export default function Editor({ image, onBack }) {
   const [brushSize, setBrushSize] = useState(10)
   const canvasRef = useRef(null)
 
+  const handleBack = () => {
+    // IMPORTANT: persist immediately when leaving the image
+    canvasRef.current?.flushSave?.()
+    onBack()
+  }
+
   return (
     <div className={styles.editor}>
       {/* Top bar */}
       <header className={styles.topbar}>
-        <button className={styles.backBtn} onClick={onBack} aria-label="Back to gallery">
-          ← 
+        <button className={styles.backBtn} onClick={handleBack} aria-label="Back to gallery">
+          ←
         </button>
+
         <div className={styles.imageTitle}>
           <span className={styles.titleIcon}>🖼️</span>
           <span className={styles.titleText}>{image.name.replace(/\.[^.]+$/, '')}</span>
         </div>
+
         <button
           className={styles.saveBtn}
           onClick={() => canvasRef.current?.save()}
           aria-label="Save image"
+          title="Save"
         >
-          💾 
+          💾
         </button>
       </header>
 
       {/* Body */}
       <div className={styles.body}>
         <Sidebar
-          tool={tool} setTool={setTool}
-          color={color} setColor={setColor}
-          brushSize={brushSize} setBrushSize={setBrushSize}
+          tool={tool}
+          setTool={setTool}
+          color={color}
+          setColor={setColor}
+          brushSize={brushSize}
+          setBrushSize={setBrushSize}
           onUndo={() => canvasRef.current?.undo()}
           onClear={() => canvasRef.current?.clear()}
         />
