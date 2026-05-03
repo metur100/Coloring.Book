@@ -4,7 +4,7 @@ const TOOLS = [
   { id: 'pen',    emoji: '✏️' },
   { id: 'eraser', emoji: '🧹' },
   { id: 'fill',   emoji: '🪣' },
-  { id: 'magic',  emoji: '✨' },
+  { id: 'hand',   emoji: '✋' }, // NEW
 ]
 
 const PRESETS = [
@@ -18,7 +18,6 @@ export default function Sidebar({ tool, setTool, color, setColor, brushSize, set
 
       {/* ── ROW 1 (phone) / normal flow (desktop): Tools + Size ── */}
       <div className={styles.row1}>
-
         <div className={styles.toolGroup}>
           {TOOLS.map(t => (
             <button
@@ -36,7 +35,10 @@ export default function Sidebar({ tool, setTool, color, setColor, brushSize, set
 
         <div className={styles.sizeGroup}>
           <input
-            type="range" min={1} max={60} value={brushSize}
+            type="range"
+            min={1}
+            max={60}
+            value={brushSize}
             onChange={e => setBrushSize(Number(e.target.value))}
             className={styles.slider}
           />
@@ -52,12 +54,10 @@ export default function Sidebar({ tool, setTool, color, setColor, brushSize, set
             }} />
           </div>
         </div>
-
       </div>
 
       {/* ── ROW 2 (phone) / normal flow (desktop): Colors ── */}
       <div className={styles.row2}>
-
         <div className={styles.palette}>
           {PRESETS.map(c => (
             <button
@@ -72,12 +72,12 @@ export default function Sidebar({ tool, setTool, color, setColor, brushSize, set
 
         <label className={styles.colorSwatch} style={{ background: color }} title="Custom color">
           <input
-            type="color" value={color}
+            type="color"
+            value={color}
             onChange={e => setColor(e.target.value)}
             className={styles.hiddenPicker}
           />
         </label>
-
       </div>
 
     </aside>
