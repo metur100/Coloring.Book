@@ -46,41 +46,41 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     if (history.current.length > 50) history.current.shift()
   }
 
-  // ── Saving ────────────────────────────────────────────────────
+  // ── Saving (FIXED) ────────────────────────────────────────────
   const saveTimer = useRef(null)
 
   const flushSave = useCallback(() => {
     clearTimeout(saveTimer.current)
     const ov = ovRef.current
-    if (ov) saveProgress(image.id, ov.toDataURL())
+    if (!ov) return
+    try {
+      saveProgress(image.id, ov.toDataURL())
+    } catch {
+      // if localStorage quota is hit, app still runs; user just won't persist
+    }
   }, [image.id])
 
+  // lightweight debounce for frequent updates (backup)
   const scheduleSave = useCallback(() => {
     clearTimeout(saveTimer.current)
     saveTimer.current = setTimeout(() => {
-      const ov = ovRef.current
-      if (ov) saveProgress(image.id, ov.toDataURL())
-    }, 600)
-  }, [image.id])
+      flushSave()
+    }, 500)
+  }, [flushSave])
 
+  // Flush save on unmount (leaving image)
   useEffect(() => {
     return () => flushSave()
   }, [flushSave])
 
-  // ── Fit + center helpers ───────────────────────────────────────
+  // ── Fit helpers ───────────────────────────────────────────────
   const computeMinScale = useCallback(() => {
     const vp = viewportRef.current
     const bg = bgRef.current
     if (!vp || !bg || !bg.width || !bg.height) return 1
-
-    // available size inside viewport
     const vw = vp.clientWidth
     const vh = vp.clientHeight
-
-    // fit image (unscaled stage) into viewport
     const s = Math.min(vw / bg.width, vh / bg.height)
-
-    // Don't upscale on minScale; keep at most 1
     return Math.min(1, s)
   }, [])
 
@@ -92,17 +92,8 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     const contentW = bg.width * useScale
     const contentH = bg.height * useScale
 
-    // If content smaller than viewport -> center by setting scroll to negative "padding" area.
-    // Since we don't have actual padding, we simulate centering by setting scroll to half of the difference (clamped to 0).
-    const extraX = Math.max(0, (vp.clientWidth - contentW) / 2)
-    const extraY = Math.max(0, (vp.clientHeight - contentH) / 2)
-
-    // We can't scroll to negative, so the clean trick is:
-    // keep scroll at 0 and rely on stage to be positioned. We don't have positioning here,
-    // so we emulate by scrolling to 0 and letting user see top-left.
-    // Better: apply translate to stage, but we keep it simple: scroll to 0 and if larger, keep bounds.
-    // We'll instead do: if smaller, scroll 0 and we add CSS centering? (not changing CSS now)
-    // Practical centering: just scroll to 0 when smaller; most important is full visibility at minScale.
+    // When fully zoomed-out (fit), keep it at top-left scroll = 0.
+    // (True centering would require CSS translate/padding, optional.)
     if (contentW <= vp.clientWidth) vp.scrollLeft = 0
     if (contentH <= vp.clientHeight) vp.scrollTop = 0
   }, [])
@@ -146,7 +137,6 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
 
       history.current = []
 
-      // compute minScale and set scale to it (fit view)
       requestAnimationFrame(() => {
         const ms = computeMinScale()
         setMinScale(ms)
@@ -156,6 +146,7 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
         centerIfSmaller(ms)
       })
     }
+
     img.src = image.src
   }, [image, computeMinScale, centerIfSmaller])
 
@@ -176,8 +167,8 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     const ov = ovRef.current
     if (!ov || !history.current.length) return
     ov.getContext('2d').putImageData(history.current.pop(), 0, 0)
-    scheduleSave()
-  }, [scheduleSave])
+    flushSave() // IMMEDIATE (fix)
+  }, [flushSave])
 
   const clear = useCallback(() => {
     const ov = ovRef.current
@@ -186,13 +177,16 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     const ctx = ov.getContext('2d')
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, ov.width, ov.height)
-    scheduleSave()
-  }, [scheduleSave])
+    flushSave() // IMMEDIATE (fix)
+  }, [flushSave])
 
   const save = useCallback(() => {
     const bg = bgRef.current
     const ov = ovRef.current
     if (!bg || !ov) return
+
+    // Make sure latest progress persists too
+    flushSave()
 
     const out = document.createElement('canvas')
     out.width = bg.width
@@ -207,7 +201,7 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     a.download = `${image.name.replace(/\.[^.]+$/, '')}-colored.png`
     a.href = out.toDataURL('image/png')
     a.click()
-  }, [image.name])
+  }, [image.name, flushSave])
 
   useImperativeHandle(ref, () => ({ undo, clear, save, flushSave }))
 
@@ -245,13 +239,13 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
         ovData.data[i + 3] = 255
       }
     }
+
     ovCtx.putImageData(ovData, 0, 0)
-    scheduleSave()
-  }, [color, scheduleSave])
+    flushSave() // IMMEDIATE (fix)
+  }, [color, flushSave])
 
   // ── Draw events ────────────────────────────────────────────────
   const startDraw = useCallback((e) => {
-    // if hand tool, we pan instead of draw
     if (tool === 'hand') return
     if (pointers.current.size >= 2) return
 
@@ -297,16 +291,22 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     ctx.stroke()
 
     lastPos.current = pos
-  }, [tool, color, brushSize])
+
+    // keep debounce as backup (in case of long drawing without lifting finger)
+    scheduleSave()
+  }, [tool, color, brushSize, scheduleSave])
 
   const stopDraw = useCallback((e) => {
     if (tool === 'hand') return
     if (pointers.current.size >= 2) return
     e?.preventDefault()
-    if (isDrawing.current) scheduleSave()
+
+    // FIX: persist immediately at the end of each stroke
+    if (isDrawing.current) flushSave()
+
     isDrawing.current = false
     lastPos.current = null
-  }, [tool, scheduleSave])
+  }, [tool, flushSave])
 
   useEffect(() => {
     const ov = ovRef.current
@@ -335,16 +335,17 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     }
   }, [startDraw, draw, stopDraw])
 
-  // ── Hand tool: drag to pan (1 finger / mouse) ──────────────────
+  // ── Hand tool: drag to pan ─────────────────────────────────────
   useEffect(() => {
     const vp = viewportRef.current
     if (!vp) return
 
     const onDown = (e) => {
+      // Track pointers for pinch too
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
       if (tool !== 'hand') return
       if (pointers.current.size >= 2) return
-
-      // only primary button for mouse
       if (e.pointerType === 'mouse' && e.button !== 0) return
 
       isPanning.current = true
@@ -353,6 +354,9 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     }
 
     const onMove = (e) => {
+      if (!pointers.current.has(e.pointerId)) return
+      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
+
       if (!isPanning.current) return
       if (tool !== 'hand') return
 
@@ -364,6 +368,7 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     }
 
     const onUp = (e) => {
+      pointers.current.delete(e.pointerId)
       if (!isPanning.current) return
       isPanning.current = false
       try { vp.releasePointerCapture?.(e.pointerId) } catch {}
@@ -410,11 +415,9 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
       const unclamped = pinch.current.startScale * factor
       const nextScale = clamp(unclamped, minScale, 4)
 
-      // midpoint in client space
       const midX = (p1.x + p2.x) / 2
       const midY = (p1.y + p2.y) / 2
 
-      // midpoint in viewport scroll space
       const rect = el.getBoundingClientRect()
       const mx = midX - rect.left + el.scrollLeft
       const my = midY - rect.top + el.scrollTop
@@ -427,7 +430,6 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
         el.scrollLeft = mx * ratio - (midX - rect.left)
         el.scrollTop = my * ratio - (midY - rect.top)
 
-        // when fully zoomed out, ensure we can see everything
         if (nextScale === minScale) centerIfSmaller(nextScale)
       })
     }
