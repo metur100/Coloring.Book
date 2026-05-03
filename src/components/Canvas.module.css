@@ -13,6 +13,18 @@
   min-height: 0;
 }
 
+/* Fun fill pop effect */
+.pop {
+  animation: popGlow 220ms ease-out;
+}
+
+@keyframes popGlow {
+  0%   { filter: brightness(1) saturate(1); }
+  45%  { filter: brightness(1.18) saturate(1.35); }
+  100% { filter: brightness(1) saturate(1); }
+}
+
+
 .stage {
   position: relative;
   transform-origin: 0 0; /* IMPORTANT: zoom math assumes top-left origin */

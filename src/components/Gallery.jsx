@@ -1,161 +1,175 @@
 // src/components/Gallery.jsx
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { loadProgress } from '../utils/storage.js';
-import styles from './Gallery.module.css';
+import { useEffect, useRef, useState } from 'react'
+import { loadProgress } from '../utils/storage.js'
+import styles from './Gallery.module.css'
 
 function uid() {
-  return crypto?.randomUUID?.() ?? String(Date.now() + Math.random());
+  return crypto?.randomUUID?.() ?? String(Date.now() + Math.random())
 }
 
 async function decodeImage(file) {
-  const buf = await file.arrayBuffer();
-  const blob = new Blob([buf], { type: file.type || 'application/octet-stream' });
+  const buf = await file.arrayBuffer()
+  const blob = new Blob([buf], { type: file.type || 'application/octet-stream' })
 
   if ('createImageBitmap' in window) {
     try {
-      return await createImageBitmap(blob);
+      return await createImageBitmap(blob)
     } catch {
-      // fall back
+      // Fallback unten
     }
   }
 
-  const url = URL.createObjectURL(blob);
+  const url = URL.createObjectURL(blob)
   try {
-    const img = new Image();
-    img.decoding = 'async';
+    const img = new Image()
+    img.decoding = 'async'
     await new Promise((res, rej) => {
-      img.onload = res;
-      img.onerror = rej;
-      img.src = url;
-    });
-    return img;
+      img.onload = res
+      img.onerror = rej
+      img.src = url
+    })
+    return img
   } finally {
-    URL.revokeObjectURL(url);
+    URL.revokeObjectURL(url)
   }
 }
 
 function toPngDataURL(imageLike, maxW = 2200) {
-  const w = imageLike.width || imageLike.naturalWidth;
-  const h = imageLike.height || imageLike.naturalHeight;
+  const w = imageLike.width || imageLike.naturalWidth
+  const h = imageLike.height || imageLike.naturalHeight
 
-  const s = Math.min(1, maxW / w);
-  const cw = Math.round(w * s);
-  const ch = Math.round(h * s);
+  const s = Math.min(1, maxW / w)
+  const cw = Math.round(w * s)
+  const ch = Math.round(h * s)
 
-  const c = document.createElement('canvas');
-  c.width = cw;
-  c.height = ch;
-  const ctx = c.getContext('2d');
-  ctx.drawImage(imageLike, 0, 0, cw, ch);
+  const c = document.createElement('canvas')
+  c.width = cw
+  c.height = ch
+  const ctx = c.getContext('2d')
+  ctx.drawImage(imageLike, 0, 0, cw, ch)
 
-  return c.toDataURL('image/png');
+  return c.toDataURL('image/png')
 }
 
 export default function Gallery({ images, onSelect, onUpload, onDelete }) {
-  const inputRef = useRef(null);
+  const inputRef = useRef(null)
 
-  // progress badge cache (async)
-  const [progressMap, setProgressMap] = useState({});
+  // Cache für Fortschritts-Badges (async)
+  const [progressMap, setProgressMap] = useState({})
 
   useEffect(() => {
-    let alive = true;
-    (async () => {
+    let alive = true
+    ;(async () => {
       const pairs = await Promise.all(
         (images || []).map(async (img) => [img.id, !!(await loadProgress(img.id))])
-      );
-      if (!alive) return;
-      const next = {};
-      for (const [id, has] of pairs) next[id] = has;
-      setProgressMap(next);
-    })();
+      )
+      if (!alive) return
+      const next = {}
+      for (const [id, has] of pairs) next[id] = has
+      setProgressMap(next)
+    })()
     return () => {
-      alive = false;
-    };
-  }, [images]);
+      alive = false
+    }
+  }, [images])
 
   const handleDrop = (e) => {
-    e.preventDefault();
-    onUpload(e.dataTransfer.files);
-  };
+    e.preventDefault()
+    onUpload(e.dataTransfer.files)
+  }
 
-  // This wrapper fixes WebP upload by normalizing all uploads to PNG dataURL
+  // Fix für WebP: Uploads immer nach PNG normalisieren (DataURL)
   const handleUploadFiles = async (fileList) => {
-    const files = Array.from(fileList || []);
-    if (!files.length) return;
+    const files = Array.from(fileList || [])
+    if (!files.length) return
 
-    const prepared = [];
+    const prepared = []
     for (const file of files) {
-      // allow empty type too, but prefer known image types
-      if (file.type && !file.type.startsWith('image/')) continue;
+      // leere Types erlauben, aber wenn vorhanden: muss Bild sein
+      if (file.type && !file.type.startsWith('image/')) continue
 
       try {
-        const decoded = await decodeImage(file);
-        const src = toPngDataURL(decoded, 2200);
+        const decoded = await decodeImage(file)
+        const src = toPngDataURL(decoded, 2200)
 
         prepared.push({
           id: uid(),
           name: file.name,
           src,
-        });
+        })
       } catch (err) {
-        console.error('Upload decode failed:', file.name, err);
-        alert(`Could not load "${file.name}". If it's a WebP, try another file or browser.`);
+        console.error('Upload-Dekodierung fehlgeschlagen:', file.name, err)
+        alert(
+          `„${file.name}“ konnte nicht geladen werden. Wenn es WebP ist: bitte eine andere Datei oder einen anderen Browser probieren.`
+        )
       }
     }
 
     if (prepared.length) {
-      // call your existing onUpload with "virtual files" (images)
-      // If your App expects FileList, change App to accept prepared images instead.
-      onUpload(prepared);
+      // Wir geben vorbereitete Bilder weiter (id/name/src)
+      onUpload(prepared)
     }
-  };
+  }
 
   return (
     <div className={styles.page}>
+      {/* Kopf */}
       <header className={styles.header}>
         <div className={styles.logo}>
           <span className={styles.logoIcon}>🎨</span>
-          <span className={styles.logoText}>Adijan's Coloring Book</span>
+          <span className={styles.logoText}>Adijan's Malbuch</span>
         </div>
-        <p className={styles.subtitle}>Choose a page to color</p>
+        <p className={styles.subtitle}>Wähle eine Seite zum Ausmalen</p>
       </header>
 
+      {/* Grid */}
       <main className={styles.main}>
+        {/* Upload-Karte */}
         <button
           className={styles.uploadCard}
           onClick={() => inputRef.current?.click()}
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
           disabled={images.length >= 30}
-          aria-label="Upload new image"
+          aria-label="Neues Bild hochladen"
+          title="Bild hinzufügen"
         >
           <div className={styles.uploadIcon}>+</div>
-          <span className={styles.uploadLabel}>Add Image</span>
+          <span className={styles.uploadLabel}>Bild hinzufügen</span>
           <span className={styles.uploadHint}>{images.length}/30</span>
         </button>
 
         <input
           ref={inputRef}
           type="file"
-          // Explicitly include webp (some browsers are picky with image/*)
           accept="image/png,image/jpeg,image/webp"
           multiple
           className={styles.hidden}
           onChange={async (e) => {
-            await handleUploadFiles(e.target.files);
-            e.target.value = '';
+            await handleUploadFiles(e.target.files)
+            e.target.value = ''
           }}
         />
 
+        {/* Bild-Karten */}
         {images.map((img) => {
-          const hasProgress = !!progressMap[img.id];
+          const hasProgress = !!progressMap[img.id]
 
           return (
-            <div key={img.id} className={styles.card} onClick={() => onSelect(img.id)}>
+            <div
+              key={img.id}
+              className={styles.card}
+              onClick={() => onSelect(img.id)}
+              title="Zum Ausmalen öffnen"
+            >
               <div className={styles.cardImg}>
                 <img src={img.src} alt={img.name} />
                 {hasProgress && (
-                  <div className={styles.progressBadge} title="Has saved coloring">
+                  <div
+                    className={styles.progressBadge}
+                    title="Ausmal-Fortschritt gespeichert"
+                    aria-label="Ausmal-Fortschritt gespeichert"
+                  >
                     🎨
                   </div>
                 )}
@@ -170,39 +184,42 @@ export default function Gallery({ images, onSelect, onUpload, onDelete }) {
                   <button
                     className={styles.editBtn}
                     onClick={(e) => {
-                      e.stopPropagation();
-                      onSelect(img.id);
+                      e.stopPropagation()
+                      onSelect(img.id)
                     }}
-                    title="Color this image"
+                    title="Dieses Bild ausmalen"
+                    aria-label="Dieses Bild ausmalen"
                   >
-                    ✏️ Color
+                    ✏️ Ausmalen
                   </button>
 
                   <button
                     className={styles.deleteBtn}
                     onClick={(e) => {
-                      e.stopPropagation();
-                      onDelete(img.id);
+                      e.stopPropagation()
+                      onDelete(img.id)
                     }}
-                    title="Delete image"
+                    title="Bild löschen"
+                    aria-label="Bild löschen"
                   >
                     🗑
                   </button>
                 </div>
               </div>
             </div>
-          );
+          )
         })}
 
+        {/* Leerzustand */}
         {images.length === 0 && (
           <div className={styles.empty}>
             <div className={styles.emptyIcon}>🖼️</div>
             <p>
-              No images yet. Click <strong>Add Image</strong> to get started!
+              Noch keine Bilder. Klicke auf <strong>Bild hinzufügen</strong>, um zu starten!
             </p>
           </div>
         )}
       </main>
     </div>
-  );
+  )
 }
