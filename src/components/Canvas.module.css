@@ -1,14 +1,20 @@
 .viewport {
   position: relative;
-  overflow: auto;
+  overflow: hidden;
   width: 100%;
   height: 100%;
-  -webkit-overflow-scrolling: touch;
 
-  /* We handle pinch ourselves (2 fingers) */
+  /* All touch gestures (move, pinch) are handled in JS */
   touch-action: none;
+  overscroll-behavior: none;
 
-  /* helps ensure scroll container works inside flex layouts */
+  /* No text selection, long-press menu or tap flash inside a WebView */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+
+  /* helps ensure it sizes correctly inside flex layouts */
   min-width: 0;
   min-height: 0;
 }
@@ -24,25 +30,50 @@
   100% { filter: brightness(1) saturate(1); }
 }
 
-
 .stage {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
   transform-origin: 0 0; /* IMPORTANT: zoom math assumes top-left origin */
-  width: fit-content;
-  height: fit-content;
-
-  /* so it doesn't shrink inside flex */
-  flex-shrink: 0;
+  will-change: transform;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.45);
 }
 
 .canvas {
   display: block;
+  -webkit-user-drag: none;
 }
 
 .overlay {
   position: absolute;
   inset: 0;
   mix-blend-mode: multiply;
-  /* Cursor hints (desktop) */
-  cursor: crosshair;
+}
+
+/* Big, easy "show the whole picture" button, visible only when zoomed in */
+.fitBtn {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  border: 3px solid rgba(255, 255, 255, 0.85);
+  background: linear-gradient(135deg, #a78bfa, #60a5fa);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  font-size: 2.2rem;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  touch-action: manipulation;
+  animation: fitIn 180ms ease-out;
+}
+
+.fitBtn:active {
+  transform: scale(0.92);
+}
+
+@keyframes fitIn {
+  from { transform: scale(0.4); opacity: 0; }
+  to   { transform: scale(1); opacity: 1; }
 }

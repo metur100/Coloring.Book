@@ -76,19 +76,15 @@
   min-height: 0;
 }
 
-/* Canvas area: scrollable in BOTH directions so full image is always reachable */
+/* Canvas area: the Canvas moves and zooms the picture itself (no scrolling) */
 .canvasArea {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  padding: 20px;
   background:
     radial-gradient(ellipse at 20% 60%, rgba(124,58,237,0.07) 0%, transparent 55%),
     radial-gradient(ellipse at 80% 20%, rgba(59,130,246,0.07) 0%, transparent 55%),
     #0d0f1a;
-  /* Critical: allow natural canvas size to overflow and be scrolled */
   min-width: 0;
   min-height: 0;
   box-sizing: border-box;
@@ -97,11 +93,4 @@
 /* ── Mobile: sidebar goes to TOP, no vertical scroll ── */
 @media (max-width: 768px) {
   .body { flex-direction: column; }
-  .canvasArea {
-    flex: 1;
-    padding: 10px;
-    align-items: flex-start;
-    justify-content: flex-start;
-    overflow: auto;
-  }
 }

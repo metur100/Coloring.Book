@@ -22,33 +22,39 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
 
   const [ready, setReady] = useState(false)
 
-  // Zoom
-  const [scaleState, setScaleState] = useState(1)
-  const scaleRef = useRef(1)
+  // View transform: content point (cx, cy) is shown at (x + cx*s, y + cy*s) in the viewport
+  const view = useRef({ x: 0, y: 0, s: 1 })
+  const fitScaleRef = useRef(1)
+  const [zoomedIn, setZoomedIn] = useState(false)
 
-  const [minScaleState, setMinScaleState] = useState(1)
-  const minScaleRef = useRef(1)
-
-  // Pointer tracking
+  // Active pointers (id → viewport-relative position)
   const pointers = useRef(new Map())
 
-  // Gesture bookkeeping
+  // Gesture state: 'idle' | 'pending' (tap or drag, undecided) | 'draw' | 'pan' | 'pinch'
   const gesture = useRef({
-    isPinching: false,
+    mode: 'idle',
+    startX: 0,
+    startY: 0,
+    viewX: 0,
+    viewY: 0,
     startDist: 0,
     startScale: 1,
     anchorCx: 0,
     anchorCy: 0,
+    strokeStart: 0,
+    last: { cx: 0, cy: 0 },
   })
-
-  // Hand tool (drag to pan)
-  const isPanning = useRef(false)
-  const panStart = useRef({ x: 0, y: 0, left: 0, top: 0 })
 
   const rafId = useRef(0)
 
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v))
   const dist = (a, b) => Math.hypot(a.x - b.x, a.y - b.y)
+
+  // A finger that moves less than this is a tap, not a drag
+  const TAP_SLOP = 12
+  // A stroke this young is treated as accidental when a second finger lands
+  const ACCIDENTAL_STROKE_MS = 300
+  const MAX_ZOOM = 6
 
   // ── FUN EFFECTS settings ───────────────────────────────────────
   const FUN = useMemo(() => {
@@ -139,16 +145,61 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     if (history.current.length > 50) history.current.shift()
   }
 
-  // ── Fit scale ──────────────────────────────────────────────────
-  const computeMinScale = useCallback(() => {
+  // ── View (pan/zoom) ────────────────────────────────────────────
+  const computeFitScale = useCallback(() => {
     const vp = viewportRef.current
     const bg = bgRef.current
     if (!vp || !bg || !bg.width || !bg.height) return 1
+    const pad = 12
+    const vw = Math.max(1, vp.clientWidth - pad * 2)
+    const vh = Math.max(1, vp.clientHeight - pad * 2)
+    return Math.min(vw / bg.width, vh / bg.height)
+  }, [])
+
+  // Keep the picture on screen: centered when smaller than the viewport,
+  // otherwise edges can't be dragged further in than a small margin.
+  const clampView = useCallback((v) => {
+    const vp = viewportRef.current
+    const bg = bgRef.current
+    if (!vp || !bg) return v
     const vw = vp.clientWidth
     const vh = vp.clientHeight
-    const s = Math.min(vw / bg.width, vh / bg.height)
-    return Math.min(1, s)
+    const w = bg.width * v.s
+    const h = bg.height * v.s
+    const margin = 24
+    const x = w <= vw ? (vw - w) / 2 : clamp(v.x, vw - w - margin, margin)
+    const y = h <= vh ? (vh - h) / 2 : clamp(v.y, vh - h - margin, margin)
+    return { x, y, s: v.s }
   }, [])
+
+  const applyView = useCallback(
+    (next) => {
+      const v = clampView(next)
+      view.current = v
+      const stage = stageRef.current
+      if (stage) stage.style.transform = `translate3d(${v.x}px, ${v.y}px, 0) scale(${v.s})`
+      setZoomedIn(v.s > fitScaleRef.current * 1.05)
+    },
+    [clampView]
+  )
+
+  const fitView = useCallback(() => {
+    const fit = computeFitScale()
+    fitScaleRef.current = fit
+    applyView({ x: 0, y: 0, s: fit })
+  }, [computeFitScale, applyView])
+
+  // Zoom to scale `s` keeping viewport point (vx, vy) fixed
+  const zoomAt = useCallback(
+    (s, vx, vy) => {
+      const v = view.current
+      const next = clamp(s, fitScaleRef.current, fitScaleRef.current * MAX_ZOOM)
+      const cx = (vx - v.x) / v.s
+      const cy = (vy - v.y) / v.s
+      applyView({ x: vx - cx * next, y: vy - cy * next, s: next })
+    },
+    [applyView]
+  )
 
   // ── Load image + restore progress ──────────────────────────────
   useEffect(() => {
@@ -198,17 +249,7 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
 
       history.current = []
 
-      requestAnimationFrame(() => {
-        const ms = computeMinScale()
-        minScaleRef.current = ms
-        setMinScaleState(ms)
-
-        scaleRef.current = ms
-        setScaleState(ms)
-
-        vp.scrollLeft = 0
-        vp.scrollTop = 0
-      })
+      fitView()
     }
 
     img.onerror = (e) => {
@@ -217,23 +258,23 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     }
 
     img.src = image.src
-  }, [image, computeMinScale])
+  }, [image, fitView])
 
-  // Recompute minScale on resize/orientation
+  // Re-fit on resize / orientation change
   useEffect(() => {
+    const vp = viewportRef.current
+    if (!vp) return
     const onResize = () => {
-      const ms = computeMinScale()
-      minScaleRef.current = ms
-      setMinScaleState(ms)
-
-      const next = Math.max(ms, scaleRef.current)
-      scaleRef.current = next
-      setScaleState(next)
+      const wasFit = view.current.s <= fitScaleRef.current * 1.05
+      const fit = computeFitScale()
+      fitScaleRef.current = fit
+      if (wasFit) applyView({ x: 0, y: 0, s: fit })
+      else applyView({ ...view.current, s: clamp(view.current.s, fit, fit * MAX_ZOOM) })
     }
-
-    window.addEventListener('resize', onResize)
-    return () => window.removeEventListener('resize', onResize)
-  }, [computeMinScale])
+    const ro = new ResizeObserver(onResize)
+    ro.observe(vp)
+    return () => ro.disconnect()
+  }, [computeFitScale, applyView])
 
   // ── Exposed methods ────────────────────────────────────────────
   const undo = useCallback(() => {
@@ -326,234 +367,259 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     [color, flushSave]
   )
 
-  // ── Coordinate conversion pointer → content coords ──────────────
-  const pointerToContent = (clientX, clientY) => {
-    const vp = viewportRef.current
-    if (!vp) return { cx: 0, cy: 0 }
-
-    const rect = vp.getBoundingClientRect()
-    const vx = clientX - rect.left
-    const vy = clientY - rect.top
-
-    const sx = vx + vp.scrollLeft
-    const sy = vy + vp.scrollTop
-
-    const s = scaleRef.current || 1
-    return { cx: sx / s, cy: sy / s }
-  }
-
-  // ── Pointer events (draw/hand/pinch) ───────────────────────────
+  // ── Pointer events ─────────────────────────────────────────────
+  // One finger: pen/eraser draw, fill taps (and drags to move), hand moves.
+  // Two fingers: move + zoom at the same time, with any tool.
   useEffect(() => {
     const vp = viewportRef.current
     const ov = ovRef.current
     if (!vp || !ov) return
 
-    const getTwo = () => {
-      const vals = [...pointers.current.values()]
-      return [vals[0], vals[1]]
+    const g = gesture.current
+
+    const toViewport = (e) => {
+      const rect = vp.getBoundingClientRect()
+      return { x: e.clientX - rect.left, y: e.clientY - rect.top }
     }
 
-    const cancelRAF = () => {
-      if (rafId.current) cancelAnimationFrame(rafId.current)
-      rafId.current = 0
+    const toContent = (p) => {
+      const v = view.current
+      return { cx: (p.x - v.x) / v.s, cy: (p.y - v.y) / v.s }
     }
 
-    const applyZoomAnchored = (nextScale, midClientX, midClientY) => {
-      const vpRect = vp.getBoundingClientRect()
-      const midVx = midClientX - vpRect.left
-      const midVy = midClientY - vpRect.top
-
-      const anchorCx = gesture.current.anchorCx
-      const anchorCy = gesture.current.anchorCy
-
-      const targetScrollLeft = anchorCx * nextScale - midVx
-      const targetScrollTop = anchorCy * nextScale - midVy
-
-      scaleRef.current = nextScale
-      setScaleState(nextScale)
-
-      cancelRAF()
-      rafId.current = requestAnimationFrame(() => {
-        vp.scrollLeft = targetScrollLeft
-        vp.scrollTop = targetScrollTop
-      })
-    }
-
-    let drawing = false
-    let last = { cx: 0, cy: 0 }
-    const penRgb = () => hexToRgba(color)
-
-    const onPointerDown = (e) => {
-      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
-
-      if (pointers.current.size === 2) {
-        const [p1, p2] = getTwo()
-        gesture.current.isPinching = true
-        gesture.current.startDist = dist(p1, p2)
-        gesture.current.startScale = scaleRef.current
-
-        const midX = (p1.x + p2.x) / 2
-        const midY = (p1.y + p2.y) / 2
-        const { cx, cy } = pointerToContent(midX, midY)
-        gesture.current.anchorCx = cx
-        gesture.current.anchorCy = cy
-
-        drawing = false
-        isPanning.current = false
-        return
-      }
-
-      if (tool === 'hand') {
-        isPanning.current = true
-        panStart.current = { x: e.clientX, y: e.clientY, left: vp.scrollLeft, top: vp.scrollTop }
-        vp.setPointerCapture?.(e.pointerId)
-        return
-      }
-
-      if (tool === 'fill') {
-        pushHistory()
-        const { cx, cy } = pointerToContent(e.clientX, e.clientY)
-        doFill(cx, cy)
-        return
-      }
-
-      // pen/eraser
-      pushHistory()
-      drawing = true
-      const { cx, cy } = pointerToContent(e.clientX, e.clientY)
-      last = { cx, cy }
-      vp.setPointerCapture?.(e.pointerId)
-    }
-
-    const onPointerMove = (e) => {
-      if (!pointers.current.has(e.pointerId)) return
-      pointers.current.set(e.pointerId, { x: e.clientX, y: e.clientY })
-
-      if (gesture.current.isPinching && pointers.current.size === 2) {
-        e.preventDefault()
-        const [p1, p2] = getTwo()
-        const d = dist(p1, p2)
-        const factor = d / (gesture.current.startDist || d)
-
-        const raw = gesture.current.startScale * factor
-        const next = clamp(raw, minScaleRef.current, 4)
-
-        const midX = (p1.x + p2.x) / 2
-        const midY = (p1.y + p2.y) / 2
-
-        applyZoomAnchored(next, midX, midY)
-        return
-      }
-
-      if (tool === 'hand' && isPanning.current) {
-        e.preventDefault()
-        const dx = e.clientX - panStart.current.x
-        const dy = e.clientY - panStart.current.y
-        vp.scrollLeft = panStart.current.left - dx
-        vp.scrollTop = panStart.current.top - dy
-        return
-      }
-
-      if (!drawing) return
-      e.preventDefault()
-
-      const ctx = ov.getContext('2d')
-      const { cx, cy } = pointerToContent(e.clientX, e.clientY)
-
-      // FUN brush style
+    const setStyle = (ctx) => {
       ctx.lineCap = 'round'
       ctx.lineJoin = 'round'
       ctx.globalCompositeOperation = 'source-over'
-
       if (tool === 'eraser') {
         ctx.shadowBlur = 0
         ctx.globalAlpha = 1
         ctx.lineWidth = brushSize * 3
         ctx.strokeStyle = '#ffffff'
+        ctx.fillStyle = '#ffffff'
       } else {
         ctx.globalAlpha = FUN.alpha
         ctx.lineWidth = brushSize
         ctx.strokeStyle = color
-
-        // glow!
+        ctx.fillStyle = color
         ctx.shadowColor = color
         ctx.shadowBlur = FUN.glow
       }
+    }
 
+    const drawDot = ({ cx, cy }) => {
+      const ctx = ov.getContext('2d')
+      setStyle(ctx)
       ctx.beginPath()
-      ctx.moveTo(last.cx, last.cy)
-      ctx.lineTo(cx, cy)
-      ctx.stroke()
+      ctx.arc(cx, cy, ctx.lineWidth / 2, 0, Math.PI * 2)
+      ctx.fill()
+    }
 
-      // sparkles sometimes (pen only)
+    const drawSegment = (to) => {
+      const ctx = ov.getContext('2d')
+      setStyle(ctx)
+      ctx.beginPath()
+      ctx.moveTo(g.last.cx, g.last.cy)
+      ctx.lineTo(to.cx, to.cy)
+      ctx.stroke()
       if (tool === 'pen' && Math.random() < FUN.sparkleChance) {
-        sprinkleSparkles(ctx, cx, cy, penRgb())
+        sprinkleSparkles(ctx, to.cx, to.cy, hexToRgba(color))
+      }
+      g.last = to
+    }
+
+    const startPan = (p) => {
+      g.mode = 'pan'
+      g.startX = p.x
+      g.startY = p.y
+      g.viewX = view.current.x
+      g.viewY = view.current.y
+    }
+
+    const startPinch = () => {
+      const [p1, p2] = [...pointers.current.values()]
+      const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+      const { cx, cy } = toContent(mid)
+      g.mode = 'pinch'
+      g.startDist = dist(p1, p2) || 1
+      g.startScale = view.current.s
+      g.anchorCx = cx
+      g.anchorCy = cy
+    }
+
+    const endStroke = () => {
+      if (g.mode === 'draw') flushSave()
+    }
+
+    const onPointerDown = (e) => {
+      e.preventDefault()
+      const p = toViewport(e)
+      pointers.current.set(e.pointerId, p)
+      vp.setPointerCapture?.(e.pointerId)
+
+      if (pointers.current.size === 2) {
+        // Second finger: a stroke that just started was almost surely the
+        // first finger of a pinch, so take it back.
+        if (g.mode === 'draw') {
+          if (performance.now() - g.strokeStart < ACCIDENTAL_STROKE_MS && history.current.length) {
+            ov.getContext('2d').putImageData(history.current.pop(), 0, 0)
+          } else {
+            flushSave()
+          }
+        }
+        startPinch()
+        return
+      }
+      if (pointers.current.size > 2) return
+
+      // Right/middle mouse button always moves the picture
+      if (e.pointerType === 'mouse' && e.button !== 0) {
+        startPan(p)
+        return
       }
 
-      last = { cx, cy }
+      if (tool === 'hand') {
+        startPan(p)
+        return
+      }
+
+      if (tool === 'fill') {
+        // Decide on move/up: a tap fills, a drag moves the picture
+        g.mode = 'pending'
+        g.startX = p.x
+        g.startY = p.y
+        g.viewX = view.current.x
+        g.viewY = view.current.y
+        return
+      }
+
+      // pen / eraser
+      pushHistory()
+      g.mode = 'draw'
+      g.strokeStart = performance.now()
+      g.last = toContent(p)
+      drawDot(g.last)
       scheduleSave()
     }
 
+    const onPointerMove = (e) => {
+      if (!pointers.current.has(e.pointerId)) return
+      e.preventDefault()
+      const p = toViewport(e)
+      pointers.current.set(e.pointerId, p)
+
+      if (g.mode === 'pinch') {
+        if (pointers.current.size < 2) return
+        const [p1, p2] = [...pointers.current.values()]
+        const mid = { x: (p1.x + p2.x) / 2, y: (p1.y + p2.y) / 2 }
+        const s = clamp(
+          g.startScale * (dist(p1, p2) / g.startDist),
+          fitScaleRef.current,
+          fitScaleRef.current * MAX_ZOOM
+        )
+        // Keep the content point that started under the fingers under them
+        applyView({ x: mid.x - g.anchorCx * s, y: mid.y - g.anchorCy * s, s })
+        return
+      }
+
+      if (g.mode === 'pending') {
+        if (Math.hypot(p.x - g.startX, p.y - g.startY) < TAP_SLOP) return
+        g.mode = 'pan'
+      }
+
+      if (g.mode === 'pan') {
+        cancelAnimationFrame(rafId.current)
+        rafId.current = requestAnimationFrame(() => {
+          applyView({
+            x: g.viewX + (p.x - g.startX),
+            y: g.viewY + (p.y - g.startY),
+            s: view.current.s,
+          })
+        })
+        return
+      }
+
+      if (g.mode === 'draw') {
+        const events = e.getCoalescedEvents?.() ?? [e]
+        for (const ce of events.length ? events : [e]) drawSegment(toContent(toViewport(ce)))
+        scheduleSave()
+      }
+    }
+
     const onPointerUp = (e) => {
+      if (!pointers.current.has(e.pointerId)) return
       pointers.current.delete(e.pointerId)
+      const remaining = pointers.current.size
 
-      if (pointers.current.size < 2) {
-        gesture.current.isPinching = false
-        gesture.current.startDist = 0
+      if (g.mode === 'pinch') {
+        // Lifting one finger of a pinch keeps moving with the other one
+        if (remaining === 1) startPan([...pointers.current.values()][0])
+        else if (remaining === 0) g.mode = 'idle'
+        return
       }
 
-      if (tool === 'hand') isPanning.current = false
+      if (remaining > 0) return
 
-      if (drawing) {
-        drawing = false
-        flushSave()
+      if (g.mode === 'pending' && e.type === 'pointerup') {
+        pushHistory()
+        const { cx, cy } = toContent({ x: g.startX, y: g.startY })
+        doFill(cx, cy)
       }
+
+      endStroke()
+      g.mode = 'idle'
     }
 
-    const onPointerCancel = () => {
-      pointers.current.clear()
-      gesture.current.isPinching = false
-      drawing = false
-      isPanning.current = false
-      flushSave()
+    const onWheel = (e) => {
+      e.preventDefault()
+      const p = toViewport(e)
+      zoomAt(view.current.s * Math.exp(-e.deltaY * 0.0015), p.x, p.y)
     }
+
+    const onContextMenu = (e) => e.preventDefault()
 
     vp.addEventListener('pointerdown', onPointerDown, { passive: false })
     vp.addEventListener('pointermove', onPointerMove, { passive: false })
     vp.addEventListener('pointerup', onPointerUp)
-    vp.addEventListener('pointercancel', onPointerCancel)
+    vp.addEventListener('pointercancel', onPointerUp)
+    vp.addEventListener('wheel', onWheel, { passive: false })
+    vp.addEventListener('contextmenu', onContextMenu)
 
     return () => {
-      cancelRAF()
+      cancelAnimationFrame(rafId.current)
       vp.removeEventListener('pointerdown', onPointerDown)
       vp.removeEventListener('pointermove', onPointerMove)
       vp.removeEventListener('pointerup', onPointerUp)
-      vp.removeEventListener('pointercancel', onPointerCancel)
+      vp.removeEventListener('pointercancel', onPointerUp)
+      vp.removeEventListener('wheel', onWheel)
+      vp.removeEventListener('contextmenu', onContextMenu)
     }
-  }, [tool, color, brushSize, doFill, flushSave, scheduleSave, sprinkleSparkles, FUN])
+  }, [tool, color, brushSize, doFill, flushSave, scheduleSave, sprinkleSparkles, FUN, applyView, zoomAt])
 
   return (
     <div
       ref={viewportRef}
       className={styles.viewport}
       aria-busy={!ready}
-      style={{ cursor: tool === 'hand' ? 'grab' : 'default' }}
+      style={{ cursor: tool === 'hand' || tool === 'fill' ? 'grab' : 'crosshair' }}
     >
-      <div ref={stageRef} className={styles.stage} style={{ transform: `scale(${scaleState})` }}>
+      <div ref={stageRef} className={styles.stage}>
         <canvas ref={bgRef} className={styles.canvas} />
-        <canvas
-          ref={ovRef}
-          className={`${styles.canvas} ${styles.overlay}`}
-          style={{
-            cursor:
-              tool === 'hand'
-                ? 'grab'
-                : tool === 'eraser'
-                  ? 'cell'
-                  : 'crosshair',
-          }}
-        />
+        <canvas ref={ovRef} className={`${styles.canvas} ${styles.overlay}`} />
       </div>
+
+      {zoomedIn && (
+        <button
+          type="button"
+          className={styles.fitBtn}
+          onPointerDown={(e) => e.stopPropagation()}
+          onClick={fitView}
+          aria-label="Show the whole picture"
+          title="Show the whole picture"
+        >
+          🖼️
+        </button>
+      )}
     </div>
   )
 })
