@@ -58,7 +58,25 @@ function toPngDataURL(imageLike, maxW = 2200) {
 
 export default function App() {
   const [images, setImages] = useState([])
-  const [editingId, setEditingId] = useState(null)
+  // Opening the editor adds a history entry, so the phone's back button
+  // (and the browser's) returns to the gallery instead of leaving the app.
+  const [editingId, setEditingId] = useState(() => window.history.state?.editing ?? null)
+
+  useEffect(() => {
+    const onPop = (e) => setEditingId(e.state?.editing ?? null)
+    window.addEventListener('popstate', onPop)
+    return () => window.removeEventListener('popstate', onPop)
+  }, [])
+
+  const openEditor = useCallback((id) => {
+    window.history.pushState({ editing: id }, '')
+    setEditingId(id)
+  }, [])
+
+  const closeEditor = useCallback(() => {
+    if (window.history.state?.editing) window.history.back()
+    else setEditingId(null)
+  }, [])
 
   // Load images from IndexedDB on mount
   useEffect(() => {
@@ -136,11 +154,11 @@ export default function App() {
   return (
     <div className={styles.app}>
       {editingId && activeImage ? (
-        <Editor image={activeImage} onBack={() => setEditingId(null)} />
+        <Editor image={activeImage} onBack={closeEditor} />
       ) : (
         <Gallery
           images={images}
-          onSelect={setEditingId}
+          onSelect={openEditor}
           onUpload={handleUpload}
           onDelete={handleDelete}
         />

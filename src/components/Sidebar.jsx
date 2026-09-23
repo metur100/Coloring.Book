@@ -68,16 +68,20 @@ export default function Sidebar({ tool, setTool, color, setColor, brushSize, set
               title={c}
             />
           ))}
-        </div>
 
-        <label className={styles.colorSwatch} style={{ background: color }} title="Custom color">
-          <input
-            type="color"
-            value={color}
-            onChange={e => setColor(e.target.value)}
-            className={styles.hiddenPicker}
-          />
-        </label>
+          <label
+            className={`${styles.dot} ${styles.customDot} ${PRESETS.includes(color) ? '' : styles.dotActive}`}
+            title="Custom color"
+          >
+            🌈
+            <input
+              type="color"
+              value={color}
+              onChange={e => setColor(e.target.value)}
+              className={styles.hiddenPicker}
+            />
+          </label>
+        </div>
       </div>
 
     </aside>

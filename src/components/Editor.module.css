@@ -1,8 +1,8 @@
 .editor {
   display: flex;
   flex-direction: column;
-  height: 100dvh;
-  width: 100vw;
+  height: calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px));
+  width: 100%;
   overflow: hidden;
   background: #0d0f1a;
 }

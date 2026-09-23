@@ -183,6 +183,14 @@
   display: none;
 }
 
+/* Custom color picker, shown as the last square in the palette */
+.customDot {
+  display: grid;
+  place-items: center;
+  font-size: 1.2rem;
+  background: conic-gradient(#e63946, #ffdd57, #8ac926, #3a86ff, #9b5de5, #f15bb5, #e63946);
+}
+
 /* ──────────────────────────────────────────────────────────────
    PHONE  ≤ 768px
    Two full-width rows.
@@ -196,8 +204,7 @@
     min-width: unset;
     flex-shrink: 0;
 
-    /* Height: keep it as a top toolbar area, but let it scroll vertically if needed */
-    max-height: 34vh;        /* adjust: toolbar takes up to ~1/3 of screen */
+    /* Show every button without scrolling; the picture gets the rest */
     height: auto;
 
     padding: 10px 10px 8px;

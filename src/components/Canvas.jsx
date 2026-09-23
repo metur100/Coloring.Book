@@ -310,9 +310,18 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     ctx.globalCompositeOperation = 'multiply'
     ctx.drawImage(ov, 0, 0)
 
+    const fileName = `${image.name.replace(/\.[^.]+$/, '')}-colored.png`
+    const dataURL = out.toDataURL('image/png')
+
+    // Inside the Android app, WebView ignores download links; let the app save it
+    if (window.AndroidBridge?.saveImage) {
+      window.AndroidBridge.saveImage(dataURL.split(',')[1], fileName)
+      return
+    }
+
     const a = document.createElement('a')
-    a.download = `${image.name.replace(/\.[^.]+$/, '')}-colored.png`
-    a.href = out.toDataURL('image/png')
+    a.download = fileName
+    a.href = dataURL
     a.click()
   }, [image.name, flushSave])
 
