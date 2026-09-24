@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react'
 import Gallery from './components/Gallery.jsx'
 import Editor from './components/Editor.jsx'
 import { loadImages, saveImages, deleteProgress } from './utils/storage.js'
+import { sfx } from './utils/sound.js'
 import styles from './App.module.css'
 
 function uid() {
@@ -139,6 +140,7 @@ export default function App() {
   const handleDelete = useCallback(
     (id) => {
       if (!confirm('Delete this image and its coloring?')) return
+      sfx.delete()
       setImages(prev => prev.filter(img => img.id !== id))
 
       // async delete; don't block UI

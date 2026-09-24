@@ -9,6 +9,9 @@ import {
 } from 'react'
 import { floodFill, hexToRgba } from '../utils/floodFill.js'
 import { loadProgress, saveProgress, throttle } from '../utils/storage.js'
+import { sfx } from '../utils/sound.js'
+import { burst, sparkle, bubbles } from '../utils/fx.js'
+import { ZoomOutIcon } from './Icons.jsx'
 import styles from './Canvas.module.css'
 
 const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref) {
@@ -291,6 +294,13 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
     const ctx = ov.getContext('2d')
     ctx.fillStyle = '#ffffff'
     ctx.fillRect(0, 0, ov.width, ov.height)
+
+    // Fun: the picture gives a little shake
+    const vp = viewportRef.current
+    vp?.classList.remove(styles.shake)
+    void vp?.offsetWidth
+    vp?.classList.add(styles.shake)
+
     flushSave()
   }, [flushSave])
 
@@ -552,6 +562,15 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
         const events = e.getCoalescedEvents?.() ?? [e]
         for (const ce of events.length ? events : [e]) drawSegment(toContent(toViewport(ce)))
         scheduleSave()
+
+        // Fun: crayon scratch sound, twinkles for the pen, bubbles for the eraser
+        if (tool === 'eraser') {
+          sfx.erase()
+          if (Math.random() < 0.35) bubbles(e.clientX, e.clientY)
+        } else {
+          sfx.draw()
+          if (Math.random() < 0.3) sparkle(e.clientX, e.clientY, color)
+        }
       }
     }
 
@@ -573,6 +592,8 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
         pushHistory()
         const { cx, cy } = toContent({ x: g.startX, y: g.startY })
         doFill(cx, cy)
+        sfx.fill()
+        burst(e.clientX, e.clientY, color)
       }
 
       endStroke()
@@ -622,11 +643,11 @@ const Canvas = forwardRef(function Canvas({ tool, color, brushSize, image }, ref
           type="button"
           className={styles.fitBtn}
           onPointerDown={(e) => e.stopPropagation()}
-          onClick={fitView}
+          onClick={() => { sfx.zoom(); fitView() }}
           aria-label="Show the whole picture"
           title="Show the whole picture"
         >
-          🖼️
+          <ZoomOutIcon className={styles.fitIcon} />
         </button>
       )}
     </div>

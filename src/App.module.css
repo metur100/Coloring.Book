@@ -3,7 +3,7 @@
   flex-direction: column;
   min-height: 100dvh;
   width: 100vw;
-  background: #0d0f1a;
+  background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%);
 
   /* Keep clear of the phone's status bar, notch and gesture bar */
   padding:

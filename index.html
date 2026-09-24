@@ -5,14 +5,23 @@
     <!-- App-like: the page itself never zooms; only the picture does -->
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
     <title>🎨 Adijan's Coloring Book</title>
-    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+    <meta name="theme-color" content="#8ecdf7" />
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <style>
       *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
       html, body { height: 100%; }
+      :root {
+        --ink: #3b2a5a;        /* cartoon outline color */
+        --sun: #ffe066;        /* "selected" yellow */
+        --sky-top: #8ecdf7;
+        --sky-bottom: #fde2f3;
+        --panel: #fff7e8;
+        --panel-edge: #f7c873;
+      }
       body {
-        font-family: 'Nunito', system-ui, sans-serif;
-        background: #0d0f1a;
-        color: #e8eaf0;
+        font-family: 'Fredoka', 'Nunito', system-ui, sans-serif;
+        background: linear-gradient(180deg, var(--sky-top) 0%, var(--sky-bottom) 100%) fixed;
+        color: var(--ink);
         overscroll-behavior: none;
         /* Feel like a native app inside a WebView */
         -webkit-tap-highlight-color: transparent;

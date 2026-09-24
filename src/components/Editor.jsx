@@ -1,13 +1,18 @@
 // src/components/Editor.jsx
 import Canvas from './Canvas.jsx';
 import Sidebar from './Sidebar.jsx';
+import { PRESETS, SIZES } from '../utils/palette.js';
+import SoundToggle from './SoundToggle.jsx';
+import { HomeIcon, CameraIcon } from './Icons.jsx';
+import { sfx } from '../utils/sound.js';
+import { confetti, burstAt } from '../utils/fx.js';
 import styles from './Editor.module.css';
 import { useEffect, useRef, useState, useCallback } from 'react';
 
 export default function Editor({ image, onBack }) {
-  const [tool, setTool] = useState('pen');
-  const [color, setColor] = useState('#e63946');
-  const [brushSize, setBrushSize] = useState(10);
+  const [tool, setTool] = useState('fill');
+  const [color, setColor] = useState(PRESETS[0]);
+  const [brushSize, setBrushSize] = useState(SIZES[1]);
   const canvasRef = useRef(null);
 
   const flush = useCallback(() => {
@@ -31,29 +36,36 @@ export default function Editor({ image, onBack }) {
   }, [flush]);
 
   const handleBack = () => {
+    sfx.back();
     flush();
     onBack();
+  };
+
+  const handleSave = (e) => {
+    sfx.save();
+    burstAt(e.currentTarget, null, 24);
+    confetti();
+    canvasRef.current?.save();
   };
 
   return (
     <div className={styles.editor}>
       <header className={styles.topbar}>
-        <button className={styles.backBtn} onClick={handleBack} aria-label="Back to gallery">
-          ←
+        <button className={`${styles.topBtn} ${styles.homeBtn}`} onClick={handleBack} aria-label="Back to gallery" title="Home">
+          <HomeIcon className={styles.topIcon} />
         </button>
 
-        <div className={styles.imageTitle}>
-          <span className={styles.titleIcon}>🖼️</span>
-          <span className={styles.titleText}>{image.name.replace(/\.[^.]+$/, '')}</span>
-        </div>
+        <div className={styles.spacer} />
+
+        <SoundToggle className={styles.topBtn} iconClassName={styles.topIcon} />
 
         <button
-          className={styles.saveBtn}
-          onClick={() => canvasRef.current?.save()}
+          className={`${styles.topBtn} ${styles.saveBtn}`}
+          onClick={handleSave}
           aria-label="Save image"
           title="Save"
         >
-          💾
+          <CameraIcon className={styles.topIcon} />
         </button>
       </header>
 

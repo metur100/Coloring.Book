@@ -1,7 +1,15 @@
 // src/components/Gallery.jsx
 import { useEffect, useRef, useState } from 'react'
 import { loadProgress } from '../utils/storage.js'
+import { sfx } from '../utils/sound.js'
+import { burstAt, confetti } from '../utils/fx.js'
+import { AddPictureIcon, TrashIcon } from './Icons.jsx'
+import SoundToggle from './SoundToggle.jsx'
 import styles from './Gallery.module.css'
+
+// Every card gets its own playful tilt and frame color
+const TILTS = [-2.5, 1.5, -1, 2.5, -1.8, 1]
+const FRAMES = ['#ff595e', '#ffca3a', '#8ac926', '#1982c4', '#6a4c93', '#ff85c0']
 
 function uid() {
   return crypto?.randomUUID?.() ?? String(Date.now() + Math.random())
@@ -108,35 +116,55 @@ export default function Gallery({ images, onSelect, onUpload, onDelete }) {
     if (prepared.length) {
       // Wir geben vorbereitete Bilder weiter (id/name/src)
       onUpload(prepared)
+      sfx.upload()
+      confetti(60)
     }
   }
 
+  const TITLE = "Adijan's Malbuch"
+
   return (
     <div className={styles.page}>
+      {/* Floating decorations */}
+      <div className={styles.sky} aria-hidden="true">
+        <span className={`${styles.float} ${styles.cloud1}`}>☁️</span>
+        <span className={`${styles.float} ${styles.cloud2}`}>☁️</span>
+        <span className={`${styles.float} ${styles.star1}`}>⭐</span>
+        <span className={`${styles.float} ${styles.star2}`}>✨</span>
+        <span className={`${styles.float} ${styles.rainbow}`}>🌈</span>
+        <span className={`${styles.float} ${styles.butterfly}`}>🦋</span>
+      </div>
+
       {/* Kopf */}
       <header className={styles.header}>
-        <div className={styles.logo}>
-          <span className={styles.logoIcon}>🎨</span>
-          <span className={styles.logoText}>Adijan's Malbuch</span>
+        <h1 className={styles.logo} aria-label={TITLE}>
+          {[...TITLE].map((ch, i) => (
+            <span key={i} className={styles.letter} style={{ '--i': i }} aria-hidden="true">
+              {ch === ' ' ? '\u00a0' : ch}
+            </span>
+          ))}
+        </h1>
+        <div className={styles.headerTools}>
+          <SoundToggle className={styles.soundBtn} iconClassName={styles.soundIcon} />
         </div>
-        <p className={styles.subtitle}>Wähle eine Seite zum Ausmalen</p>
       </header>
 
       {/* Grid */}
       <main className={styles.main}>
         {/* Upload-Karte */}
         <button
-          className={styles.uploadCard}
-          onClick={() => inputRef.current?.click()}
+          className={`${styles.uploadCard} ${images.length === 0 ? styles.invite : ''}`}
+          onClick={() => {
+            sfx.tap()
+            inputRef.current?.click()
+          }}
           onDragOver={(e) => e.preventDefault()}
           onDrop={handleDrop}
           disabled={images.length >= 30}
           aria-label="Neues Bild hochladen"
           title="Bild hinzufügen"
         >
-          <div className={styles.uploadIcon}>+</div>
-          <span className={styles.uploadLabel}>Bild hinzufügen</span>
-          <span className={styles.uploadHint}>{images.length}/30</span>
+          <AddPictureIcon className={styles.uploadIcon} />
         </button>
 
         <input
@@ -152,14 +180,19 @@ export default function Gallery({ images, onSelect, onUpload, onDelete }) {
         />
 
         {/* Bild-Karten */}
-        {images.map((img) => {
+        {images.map((img, i) => {
           const hasProgress = !!progressMap[img.id]
 
           return (
             <div
               key={img.id}
               className={styles.card}
-              onClick={() => onSelect(img.id)}
+              style={{ '--tilt': `${TILTS[i % TILTS.length]}deg`, '--frame': FRAMES[i % FRAMES.length] }}
+              onClick={(e) => {
+                sfx.open()
+                burstAt(e.currentTarget, FRAMES[i % FRAMES.length], 20)
+                onSelect(img.id)
+              }}
               title="Zum Ausmalen öffnen"
             >
               <div className={styles.cardImg}>
@@ -170,55 +203,25 @@ export default function Gallery({ images, onSelect, onUpload, onDelete }) {
                     title="Ausmal-Fortschritt gespeichert"
                     aria-label="Ausmal-Fortschritt gespeichert"
                   >
-                    🎨
+                    ⭐
                   </div>
                 )}
               </div>
 
-              <div className={styles.cardFooter}>
-                <span className={styles.cardName}>
-                  {img.name.replace(/\.[^.]+$/, '')}
-                </span>
-
-                <div className={styles.cardActions}>
-                  <button
-                    className={styles.editBtn}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onSelect(img.id)
-                    }}
-                    title="Dieses Bild ausmalen"
-                    aria-label="Dieses Bild ausmalen"
-                  >
-                    ✏️ Ausmalen
-                  </button>
-
-                  <button
-                    className={styles.deleteBtn}
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      onDelete(img.id)
-                    }}
-                    title="Bild löschen"
-                    aria-label="Bild löschen"
-                  >
-                    🗑
-                  </button>
-                </div>
-              </div>
+              <button
+                className={styles.deleteBtn}
+                onClick={(e) => {
+                  e.stopPropagation()
+                  onDelete(img.id)
+                }}
+                title="Bild löschen"
+                aria-label="Bild löschen"
+              >
+                <TrashIcon className={styles.deleteIcon} />
+              </button>
             </div>
           )
         })}
-
-        {/* Leerzustand */}
-        {images.length === 0 && (
-          <div className={styles.empty}>
-            <div className={styles.emptyIcon}>🖼️</div>
-            <p>
-              Noch keine Bilder. Klicke auf <strong>Bild hinzufügen</strong>, um zu starten!
-            </p>
-          </div>
-        )}
       </main>
     </div>
   )
